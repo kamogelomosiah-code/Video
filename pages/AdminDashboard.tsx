@@ -14,6 +14,7 @@ import { User, MediaItem, UserRole, TalentProfile, ActivityLog } from '../types'
 import { api } from '../services/api';
 import { ShieldCheck, Video, Users, PlusCircle, Edit, Trash2, X, Save, Settings, Star, MapPin, UploadCloud, Menu, ChevronDown, Wand2 } from 'lucide-react';
 import AdminBulkImport from './AdminUpload';
+import { CMPSandbox } from '../components/CMPBanner';
 
 interface AdminDashboardProps {
   user: User;
@@ -513,6 +514,10 @@ const SiteSettingsPanel = ({ talent, media, settings, onEditTalent, onDeleteTale
                 <TalentTable talent={talent} onEdit={onEditTalent} onDelete={onDeleteTalent} /> 
             </div> 
         </div> 
+        
+        <div className="pt-6 border-t border-zinc-900">
+            <CMPSandbox />
+        </div>
     </div> 
 );
 

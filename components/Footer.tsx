@@ -1,7 +1,12 @@
 import React from 'react';
 import { ShieldCheck, Scale, FileText, Globe } from 'lucide-react';
 
-const Footer: React.FC = () => {
+interface FooterProps {
+  onOpenPrivacy?: () => void;
+  onOpenTerms?: () => void;
+}
+
+const Footer: React.FC<FooterProps> = ({ onOpenPrivacy, onOpenTerms }) => {
   return (
     <footer id="elysian-site-footer" className="mt-16 pt-12 pb-8 border-t border-zinc-900 bg-[#09090b]">
       <div className="max-w-7xl mx-auto px-4 md:px-6 space-y-10">
@@ -53,10 +58,10 @@ const Footer: React.FC = () => {
               <span>&copy; {new Date().getFullYear()} Elysian. All rights reserved.</span>
             </div>
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
-              <span className="hover:text-yellow-400 transition-colors cursor-pointer flex items-center">
+              <span onClick={onOpenTerms} className="hover:text-yellow-400 transition-colors cursor-pointer flex items-center">
                 <FileText className="w-3 h-3 mr-1" /> Terms of Service
               </span>
-              <span className="hover:text-yellow-400 transition-colors cursor-pointer flex items-center">
+              <span onClick={onOpenPrivacy} className="hover:text-yellow-400 transition-colors cursor-pointer flex items-center">
                 <FileText className="w-3 h-3 mr-1" /> Privacy Policy
               </span>
               <span className="hover:text-yellow-400 transition-colors cursor-pointer flex items-center">

@@ -16,6 +16,8 @@ import { api } from './services/api';
 
 import MessagesPage from './pages/Messages';
 import Footer from './components/Footer';
+import CMPBanner from './components/CMPBanner';
+import LegalDocsModal from './components/LegalDocsModal';
 
 const GUEST_USER: User = {
   id: 'guest',
@@ -41,6 +43,10 @@ const App: React.FC = () => {
 
   const [isVerificationOpen, setIsVerificationOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [legalDocs, setLegalDocs] = useState<{ isOpen: boolean; tab: 'privacy' | 'terms' }>({
+    isOpen: false,
+    tab: 'privacy'
+  });
   
   // Auth State
   const [currentUser, setCurrentUser] = useState<User>(GUEST_USER);
@@ -185,7 +191,7 @@ const App: React.FC = () => {
                />
              )}
              {currentPage === 'admin-dashboard' && <AdminDashboard user={currentUser} />}
-             <Footer />
+             <Footer onOpenPrivacy={() => setLegalDocs({ isOpen: true, tab: 'privacy' })} onOpenTerms={() => setLegalDocs({ isOpen: true, tab: 'terms' })} />
           </div>
         </main>
 
@@ -197,6 +203,12 @@ const App: React.FC = () => {
       </div>
 
       {isVerificationOpen && <VerificationModal onClose={() => setIsVerificationOpen(false)} />}
+      <CMPBanner onOpenLegalDocs={(tab) => setLegalDocs({ isOpen: true, tab })} />
+      <LegalDocsModal 
+        isOpen={legalDocs.isOpen} 
+        onClose={() => setLegalDocs(p => ({ ...p, isOpen: false }))} 
+        defaultTab={legalDocs.tab}
+      />
     </div>
   );
 };

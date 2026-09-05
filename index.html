@@ -6,8 +6,33 @@
     <meta name="theme-color" content="#000000" />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍌</text></svg>">
     <title>Elysian | Premium Media & Talent</title>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6421372298185696"
-     crossorigin="anonymous"></script>
+    <!-- AdSense Verification Meta Tag -->
+    <meta name="google-adsense-account" content="ca-pub-6421372298185696">
+    
+    <!-- GDPR/ePrivacy Consent script to conditionally load AdSense -->
+    <script>
+      (function() {
+        window.__loadAdSense = function() {
+          if (window.__adSenseLoaded) return;
+          window.__adSenseLoaded = true;
+          var script = document.createElement('script');
+          script.async = true;
+          script.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6421372298185696";
+          script.crossOrigin = "anonymous";
+          document.head.appendChild(script);
+          console.log("[Elysian CMP] AdSense script loaded successfully under consent.");
+        };
+
+        try {
+          var consent = localStorage.getItem('elysian_cmp_consent');
+          if (consent === 'granted' || consent === 'all') {
+            window.__loadAdSense();
+          }
+        } catch (e) {
+          console.error("[Elysian CMP] Failed to read consent from localStorage", e);
+        }
+      })();
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Satisfy&display=swap" rel="stylesheet">
     <style>
       html, body, #root {
