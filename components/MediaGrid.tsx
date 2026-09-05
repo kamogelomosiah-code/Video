@@ -22,7 +22,7 @@ const MediaGrid: React.FC<MediaGridProps> = ({ items, onItemClick }) => {
         <div 
           key={item.id} 
           onClick={() => handleClick(item)}
-          className="group relative bg-black rounded-xl sm:rounded-2xl overflow-hidden border border-zinc-900 hover:border-red-600/50 transition-all duration-300 hover:shadow-2xl hover:shadow-red-600/10 cursor-pointer flex flex-col"
+          className="group relative bg-black rounded-xl sm:rounded-2xl overflow-hidden border border-zinc-900 hover:border-yellow-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-yellow-500/10 cursor-pointer flex flex-col"
         >
           <div className="relative aspect-video overflow-hidden">
             <img 
@@ -49,7 +49,7 @@ const MediaGrid: React.FC<MediaGridProps> = ({ items, onItemClick }) => {
 
             {/* Play Button Overlay */}
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-75 group-hover:scale-100">
-               <div className="w-10 h-10 sm:w-14 sm:h-14 bg-red-600 rounded-full flex items-center justify-center shadow-lg shadow-red-600/40">
+               <div className="w-10 h-10 sm:w-14 sm:h-14 bg-yellow-500 rounded-full flex items-center justify-center shadow-lg shadow-yellow-500/40">
                  <Play className="w-4 h-4 sm:w-6 sm:h-6 text-white ml-1" fill="currentColor" />
                </div>
             </div>
@@ -57,7 +57,7 @@ const MediaGrid: React.FC<MediaGridProps> = ({ items, onItemClick }) => {
 
           <div className="p-2 sm:p-4 flex flex-col flex-1">
             <div className="flex justify-between items-start mb-1 sm:mb-2">
-              <h3 className="font-semibold text-zinc-200 text-xs sm:text-base line-clamp-2 sm:line-clamp-1 group-hover:text-red-500 transition-colors leading-tight">
+              <h3 className="font-semibold text-zinc-200 text-xs sm:text-base line-clamp-2 sm:line-clamp-1 group-hover:text-yellow-400 transition-colors leading-tight">
                 {item.title}
               </h3>
             </div>

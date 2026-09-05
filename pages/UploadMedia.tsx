@@ -142,7 +142,7 @@ const UploadMedia: React.FC<UploadMediaProps> = ({ user, onCancel, onUploadCompl
           <h1 className="text-3xl font-bold text-white">Upload Content</h1>
           <p className="text-zinc-400">Add new videos or photos to your channel</p>
         </div>
-        <button type="button" aria-label="Cancel upload" onClick={onCancel} className="p-2 text-zinc-400 hover:text-white bg-zinc-900 rounded-full">
+        <button type="button" aria-label="Cancel upload" onClick={onCancel} className="p-2 text-zinc-400 hover:text-white bg-[#111] rounded-full">
           <X className="w-6 h-6" />
         </button>
       </div>
@@ -150,7 +150,7 @@ const UploadMedia: React.FC<UploadMediaProps> = ({ user, onCancel, onUploadCompl
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column: File Upload */}
         <div className="lg:col-span-1 space-y-4">
-          <div className="flex bg-zinc-900 rounded-xl p-1 mb-4">
+          <div className="flex bg-[#111] rounded-xl p-1 mb-4">
              <button 
                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${uploadMode === 'file' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-white'}`}
                onClick={() => setUploadMode('file')}
@@ -169,10 +169,10 @@ const UploadMedia: React.FC<UploadMediaProps> = ({ user, onCancel, onUploadCompl
           <div 
             className={`aspect-[3/4] rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center p-4 text-center ${
               dragActive 
-                ? 'border-red-600 bg-red-600/5' 
+                ? 'border-yellow-500 bg-yellow-500/5' 
                 : file 
                   ? 'border-green-500/50 bg-green-500/5' 
-                  : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700'
+                  : 'border-zinc-800 bg-[#111] hover:border-zinc-700'
             }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -199,7 +199,7 @@ const UploadMedia: React.FC<UploadMediaProps> = ({ user, onCancel, onUploadCompl
                    <button 
                     type="button"
                     onClick={() => { setFile(null); setUploadProgress(0); }}
-                    className="text-xs text-red-500 mt-4 hover:underline"
+                    className="text-xs text-yellow-400 mt-4 hover:underline"
                    >
                      Remove File
                    </button>
@@ -220,7 +220,7 @@ const UploadMedia: React.FC<UploadMediaProps> = ({ user, onCancel, onUploadCompl
             )}
           </div>
           ) : (
-            <div className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800 h-full">
+            <div className="bg-[#111]/50 p-6 rounded-2xl border border-zinc-800 h-full">
                <h3 className="text-lg font-semibold text-white mb-4">External URL</h3>
                <div className="space-y-4">
                  <div className="space-y-2">
@@ -229,7 +229,7 @@ const UploadMedia: React.FC<UploadMediaProps> = ({ user, onCancel, onUploadCompl
                      type="url" 
                      value={externalUrl}
                      onChange={(e) => setExternalUrl(e.target.value)}
-                     className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-red-600 focus:border-red-600 focus:outline-none transition-all text-sm"
+                     className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500 focus:outline-none transition-all text-sm"
                      placeholder="https://example.com/tube-video"
                      required
                    />
@@ -240,7 +240,7 @@ const UploadMedia: React.FC<UploadMediaProps> = ({ user, onCancel, onUploadCompl
                      type="url" 
                      value={thumbnailUrl}
                      onChange={(e) => setThumbnailUrl(e.target.value)}
-                     className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-red-600 focus:border-red-600 focus:outline-none transition-all text-sm"
+                     className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500 focus:outline-none transition-all text-sm"
                      placeholder="https://example.com/thumbnail.jpg"
                    />
                  </div>
@@ -256,14 +256,14 @@ const UploadMedia: React.FC<UploadMediaProps> = ({ user, onCancel, onUploadCompl
 
         {/* Right Column: Metadata */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="space-y-4 bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800">
+          <div className="space-y-4 bg-[#111]/50 p-6 rounded-2xl border border-zinc-800">
              <div className="flex items-center justify-between">
                <h3 className="text-lg font-semibold text-white">Content Details</h3>
                <button 
                 type="button"
                 onClick={generateAITags}
                 disabled={isProcessing}
-                className="text-xs flex items-center text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
+                className="text-xs flex items-center text-yellow-300 hover:text-red-300 transition-colors disabled:opacity-50"
                >
                  <Wand2 className="w-3 h-3 mr-1" />
                  {isProcessing ? 'Generating...' : 'Auto-fill with AI'}
@@ -276,7 +276,7 @@ const UploadMedia: React.FC<UploadMediaProps> = ({ user, onCancel, onUploadCompl
                  type="text" 
                  value={title}
                  onChange={(e) => setTitle(e.target.value)}
-                 className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-red-600 focus:border-red-600 focus:outline-none transition-all"
+                 className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500 focus:outline-none transition-all"
                  placeholder="Enter a catchy title..."
                />
              </div>
@@ -286,7 +286,7 @@ const UploadMedia: React.FC<UploadMediaProps> = ({ user, onCancel, onUploadCompl
                <textarea 
                  value={description}
                  onChange={(e) => setDescription(e.target.value)}
-                 className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-red-600 focus:border-red-600 focus:outline-none transition-all h-32 resize-none"
+                 className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500 focus:outline-none transition-all h-32 resize-none"
                  placeholder="What is your content about? (18+ allowed)"
                />
              </div>
@@ -315,18 +315,18 @@ const UploadMedia: React.FC<UploadMediaProps> = ({ user, onCancel, onUploadCompl
                      }
                    }
                  }}
-                 className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-2 text-sm text-white focus:ring-1 focus:ring-red-600 focus:border-red-600 focus:outline-none transition-all"
+                 className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-2 text-sm text-white focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500 focus:outline-none transition-all"
                  placeholder="Add tags (press Enter)..."
                />
              </div>
           </div>
 
-          <div className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800">
+          <div className="bg-[#111]/50 p-6 rounded-2xl border border-zinc-800">
             <h3 className="text-lg font-semibold text-white mb-4">Monetization (ZAR)</h3>
             <div className="flex items-center space-x-4 mb-4">
               <label className="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" checked={isPremium} onChange={() => setIsPremium(!isPremium)} className="sr-only peer" />
-                <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
                 <span className="ml-3 text-sm font-medium text-zinc-300">Premium Paid Content</span>
               </label>
             </div>
@@ -339,7 +339,7 @@ const UploadMedia: React.FC<UploadMediaProps> = ({ user, onCancel, onUploadCompl
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="Price (e.g. 199.00)"
-                  className="w-full bg-black border border-zinc-800 rounded-xl pl-9 pr-4 py-2 text-white focus:ring-1 focus:ring-red-600 focus:outline-none"
+                  className="w-full bg-black border border-zinc-800 rounded-xl pl-9 pr-4 py-2 text-white focus:ring-1 focus:ring-yellow-500 focus:outline-none"
                 />
               </div>
             )}

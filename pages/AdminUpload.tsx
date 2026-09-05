@@ -36,11 +36,34 @@ const AdminBulkImport: React.FC = () => {
                 if (typeof content !== 'string') {
                     throw new Error("Invalid file content");
                 }
-                const itemsToImport = JSON.parse(content) as MediaItem[];
+                const parsedData = JSON.parse(content) as any[];
                 
+                if (!Array.isArray(parsedData)) {
+                   throw new Error("Invalid JSON format. Expected an array of objects.");
+                }
+
+                // Map the simplified JSON format to full MediaItem schema
+                const itemsToImport: MediaItem[] = parsedData.map(item => ({
+                    id: item.id || `imported-${Math.random().toString(36).substr(2, 9)}`,
+                    userId: item.userId || 'admin-user',
+                    title: item.title || 'Untitled',
+                    description: item.description || '',
+                    thumbnailUrl: item.imageUrl || item.thumbnailUrl || '',
+                    sourceUrl: item.videoUrl || item.sourceUrl || '',
+                    redirectUrl: item.videoUrl || item.redirectUrl || '', // Treat imported videoUrl as a redirect if needed
+                    mediaType: item.mediaType || 'video',
+                    duration: item.duration || '00:00',
+                    views: item.views || 0,
+                    creatorName: item.creatorName || 'Imported Content',
+                    creatorAvatar: item.creatorAvatar || '',
+                    tags: item.tags || [],
+                    isPremium: item.isPremium || false,
+                    uploadedAt: item.uploadedAt || new Date().toISOString()
+                }));
+
                 // Basic validation
-                if (!Array.isArray(itemsToImport) || itemsToImport.some(item => !item.id || !item.title)) {
-                   throw new Error("Invalid JSON format. Expected an array of media items.");
+                if (itemsToImport.some(item => !item.title)) {
+                   throw new Error("Invalid JSON format. Missing title field.");
                 }
 
                 store.importMedia(itemsToImport);
@@ -60,16 +83,16 @@ const AdminBulkImport: React.FC = () => {
     };
 
     return (
-        <div className="max-w-3xl mx-auto p-6 md:p-8 bg-zinc-900/50 rounded-2xl mt-4 border border-zinc-800">
+        <div className="max-w-3xl mx-auto p-6 md:p-8 bg-[#111]/50 rounded-2xl mt-4 border border-zinc-800">
             <div className="flex items-center mb-6">
-                <DownloadCloud className="w-8 h-8 text-red-500 mr-4" />
+                <DownloadCloud className="w-8 h-8 text-yellow-400 mr-4" />
                 <div>
                     <h3 className="text-xl font-bold text-white">Bulk Import & Export</h3>
                     <p className="text-zinc-400 text-sm">Backup or restore video content using JSON files.</p>
                 </div>
             </div>
             <div className="space-y-6">
-                <div className="bg-zinc-950 rounded-xl p-6 border border-zinc-800">
+                <div className="bg-black rounded-xl p-6 border border-zinc-800">
                     <h4 className="font-semibold text-white mb-2">Export Video Data</h4>
                     <p className="text-sm text-zinc-500 mb-4">Download a JSON file containing all video records. This can be used as a backup.</p>
                     <button
@@ -82,7 +105,7 @@ const AdminBulkImport: React.FC = () => {
                     </button>
                 </div>
 
-                 <form onSubmit={handleSubmit} className="bg-zinc-950 rounded-xl p-6 border border-zinc-800">
+                 <form onSubmit={handleSubmit} className="bg-black rounded-xl p-6 border border-zinc-800">
                     <h4 className="font-semibold text-white mb-2">Import Video Data</h4>
                     <p className="text-sm text-zinc-500 mb-4">Upload a JSON file to add multiple videos. Existing videos with the same ID will be updated.</p>
                     <input
@@ -93,7 +116,7 @@ const AdminBulkImport: React.FC = () => {
                     />
                     <button
                         type="submit"
-                        className="flex items-center bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-bold shadow-lg shadow-red-700/20 transition-all text-sm"
+                        className="flex items-center bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg shadow-yellow-600/20 transition-all text-sm"
                         disabled={loading}
                     >
                         <UploadCloud className="w-4 h-4 mr-2" />
@@ -102,7 +125,7 @@ const AdminBulkImport: React.FC = () => {
                 </form>
             </div>
            
-            {status && <div className={`mt-6 text-center rounded-xl py-3 px-4 text-sm font-medium ${status.includes('success') ? 'bg-green-900/40 text-green-400 border border-green-700/50' : 'bg-red-900/40 text-red-400 border border-red-700/50'}`}>{status}</div>}
+            {status && <div className={`mt-6 text-center rounded-xl py-3 px-4 text-sm font-medium ${status.includes('success') ? 'bg-green-900/40 text-green-400 border border-green-700/50' : 'bg-red-900/40 text-yellow-300 border border-yellow-600/50'}`}>{status}</div>}
         </div>
     );
 };

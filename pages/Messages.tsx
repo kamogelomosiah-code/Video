@@ -58,7 +58,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, onBack }) => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-full bg-zinc-950 rounded-xl overflow-hidden border border-zinc-900">
+    <div className="flex flex-col md:flex-row h-full bg-black rounded-xl overflow-hidden border border-zinc-900">
       {/* Sidebar for conversations */}
       <div className={`w-full md:w-1/3 border-r border-zinc-900 ${selectedTalent ? 'hidden md:block' : 'block'}`}>
         <div className="p-4 border-b border-zinc-900">
@@ -69,7 +69,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, onBack }) => {
             <div 
               key={talent.id} 
               onClick={() => setSelectedTalent(talent)}
-              className={`p-4 border-b border-zinc-900/50 cursor-pointer hover:bg-zinc-900 transition-colors flex items-center ${selectedTalent?.id === talent.id ? 'bg-zinc-900' : ''}`}
+              className={`p-4 border-b border-zinc-900/50 cursor-pointer hover:bg-[#111] transition-colors flex items-center ${selectedTalent?.id === talent.id ? 'bg-[#111]' : ''}`}
             >
               <div className="relative">
                 <img src={talent.imageUrl} alt={talent.name} className="w-12 h-12 rounded-full object-cover border border-zinc-800" />
@@ -87,7 +87,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, onBack }) => {
       {/* Chat Area */}
       {selectedTalent ? (
         <div className={`w-full md:w-2/3 flex flex-col h-full ${!selectedTalent ? 'hidden md:flex' : 'flex'}`}>
-          <div className="p-4 border-b border-zinc-900 flex items-center bg-zinc-900/50">
+          <div className="p-4 border-b border-zinc-900 flex items-center bg-[#111]/50">
             <button className="md:hidden mr-4 text-zinc-400 hover:text-white" onClick={() => setSelectedTalent(null)}>
               <ArrowLeft className="w-6 h-6" />
             </button>
@@ -108,7 +108,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, onBack }) => {
                 const isMine = msg.senderId === currentUser.id;
                 return (
                   <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm ${isMine ? 'bg-red-600 text-white rounded-br-none' : 'bg-zinc-800 text-zinc-200 rounded-bl-none'}`}>
+                    <div className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm ${isMine ? 'bg-yellow-500 text-white rounded-br-none' : 'bg-zinc-800 text-zinc-200 rounded-bl-none'}`}>
                       {msg.text}
                     </div>
                   </div>
@@ -118,7 +118,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, onBack }) => {
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="p-4 border-t border-zinc-900 bg-zinc-950">
+          <div className="p-4 border-t border-zinc-900 bg-black">
             <div className="flex items-center space-x-2">
               <input 
                 type="text" 
@@ -126,12 +126,12 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, onBack }) => {
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 placeholder="Type a message..."
-                className="flex-1 bg-zinc-900 border border-zinc-800 rounded-full px-4 py-2 text-white focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600"
+                className="flex-1 bg-[#111] border border-zinc-800 rounded-full px-4 py-2 text-white focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500"
               />
               <button 
                 onClick={handleSend}
                 disabled={isLoading || !inputText.trim()}
-                className="bg-red-600 hover:bg-red-700 text-white p-2.5 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="bg-yellow-500 hover:bg-yellow-600 text-white p-2.5 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <Send className="w-5 h-5" />
               </button>
@@ -140,7 +140,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, onBack }) => {
         </div>
       ) : (
         <div className="hidden md:flex w-2/3 items-center justify-center text-zinc-500 flex-col">
-          <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mb-4">
+          <div className="w-16 h-16 bg-[#111] rounded-full flex items-center justify-center mb-4">
             <Send className="w-8 h-8 text-zinc-600" />
           </div>
           <p>Select a conversation to start chatting</p>

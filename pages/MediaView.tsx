@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ThumbsUp, ThumbsDown, Share2, Bell, CheckCircle2, Play, Lock, Frown } from 'lucide-react';
 import { MediaItem, User } from '../types';
 import { api } from '../services/api';
+import AdBanner from '../components/AdBanner';
 
 interface MediaViewProps {
   mediaId: string;
@@ -24,13 +25,15 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
     // Reset state
     setMedia(undefined);
     setIsPlaying(false);
-    setIsLiked(false);
     
     const fetchMediaData = async () => {
         try {
             const item = await api.media.getById(mediaId);
             if (item) {
                 setMedia(item);
+                setIsLiked(item.likes?.includes(currentUser.id) || false);
+                setIsDisliked(item.dislikes?.includes(currentUser.id) || false);
+                
                 const relatedItems = await api.media.getRelated(mediaId);
                 setRelated(relatedItems);
             } else {
@@ -47,7 +50,34 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
     if (mainContainer) mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
 
     fetchMediaData();
-  }, [mediaId]);
+  }, [mediaId, currentUser.id]);
+
+  const handleRate = async (type: 'like' | 'dislike') => {
+      if (!media) return;
+      
+      const newIsLiked = type === 'like' ? !isLiked : false;
+      const newIsDisliked = type === 'dislike' ? !isDisliked : false;
+      
+      setIsLiked(newIsLiked);
+      setIsDisliked(newIsDisliked);
+      
+      try {
+          await api.media.rate(media.id, currentUser.id, type === 'like');
+          
+          // Optionally update local media state to reflect new counts without full refetch
+          setMedia(prev => {
+              if (!prev) return prev;
+              const likes = (prev.likes || []).filter(id => id !== currentUser.id);
+              const dislikes = (prev.dislikes || []).filter(id => id !== currentUser.id);
+              if (newIsLiked) likes.push(currentUser.id);
+              if (newIsDisliked) dislikes.push(currentUser.id);
+              return { ...prev, likes, dislikes };
+          });
+      } catch(e) {
+          console.error(e);
+          // Revert on error could go here
+      }
+  };
 
   // Loading State
   if (media === undefined) {
@@ -57,9 +87,9 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
   // Not Found State
   if (media === null) {
       return (
-        <div className="flex flex-col items-center justify-center py-20 text-center bg-zinc-900/50 rounded-3xl border-2 border-dashed border-zinc-800">
-            <div className="w-16 h-16 bg-red-600/10 rounded-full flex items-center justify-center mb-6">
-                <Frown className="w-8 h-8 text-red-500" />
+        <div className="flex flex-col items-center justify-center py-20 text-center bg-[#111]/50 rounded-3xl border-2 border-dashed border-zinc-800">
+            <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center mb-6">
+                <Frown className="w-8 h-8 text-yellow-400" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">Content Not Found</h2>
             <p className="text-zinc-400 mb-8 max-w-sm">
@@ -68,7 +98,7 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
             <button 
                 type="button"
                 onClick={onBack} 
-                className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-full font-bold flex items-center transition-colors"
+                className="bg-yellow-500 hover:bg-yellow-600 text-white px-8 py-3 rounded-full font-bold flex items-center transition-colors"
             >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Return to Media Hub
@@ -110,7 +140,7 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
                             type="button"
                             aria-label="Play content"
                             onClick={() => setIsPlaying(true)}
-                            className="w-20 h-20 bg-red-600/90 rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow-[0_0_30px_rgba(220,38,38,0.5)]"
+                            className="w-20 h-20 bg-yellow-500/90 rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow-[0_0_30px_rgba(220,38,38,0.5)]"
                         >
                             <Play className="w-8 h-8 text-white ml-1 fill-current" />
                         </button>
@@ -133,9 +163,9 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
 
         {/* Premium Banner (if applicable) */}
         {media.isPremium && (
-            <div className="bg-gradient-to-r from-red-900/30 to-black border border-red-600/30 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="bg-gradient-to-r from-red-900/30 to-black border border-yellow-500/30 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center">
-                    <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center mr-4 shadow-lg shadow-red-600/30 flex-shrink-0">
+                    <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center mr-4 shadow-lg shadow-yellow-500/30 flex-shrink-0">
                         <Lock className="w-5 h-5 text-white" />
                     </div>
                     <div>
@@ -143,7 +173,7 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
                         <p className="text-xs text-red-300">Join now to access premium content from {media.creatorName}</p>
                     </div>
                 </div>
-                <button type="button" className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-full font-bold text-sm shadow-lg shadow-red-600/20 whitespace-nowrap w-full sm:w-auto">
+                <button type="button" className="bg-yellow-500 hover:bg-yellow-400 text-white px-6 py-2 rounded-full font-bold text-sm shadow-lg shadow-yellow-500/20 whitespace-nowrap w-full sm:w-auto">
                     Join for R{media.price || 99}
                 </button>
             </div>
@@ -163,25 +193,26 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
             </div>
 
             <div className="flex items-center space-x-2">
-                <div className="flex bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
+                <div className="flex bg-[#111] rounded-full overflow-hidden border border-zinc-800">
                     <button 
                         type="button"
-                        onClick={() => { setIsLiked(!isLiked); if(isDisliked) setIsDisliked(false); }}
-                        className={`flex items-center space-x-2 px-4 py-2 hover:bg-zinc-800 transition-colors ${isLiked ? 'text-red-500' : 'text-zinc-300'}`}
+                        onClick={() => handleRate('like')}
+                        className={`flex items-center space-x-2 px-4 py-2 hover:bg-zinc-800 transition-colors ${isLiked ? 'text-yellow-400' : 'text-zinc-300'}`}
                     >
                         <ThumbsUp className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-                        <span className="text-sm font-medium">{isLiked ? '45.1K' : '45K'}</span>
+                        <span className="text-sm font-medium">{media.likes?.length || 0}</span>
                     </button>
                     <div className="w-px bg-zinc-800"></div>
                     <button 
                         type="button"
-                        onClick={() => { setIsDisliked(!isDisliked); if(isLiked) setIsLiked(false); }}
+                        onClick={() => handleRate('dislike')}
                         className={`px-4 py-2 hover:bg-zinc-800 transition-colors ${isDisliked ? 'text-white' : 'text-zinc-300'}`}
                     >
                         <ThumbsDown className={`w-5 h-5 ${isDisliked ? 'fill-current' : ''}`} />
+                        <span className="text-sm font-medium ml-2">{media.dislikes?.length || 0}</span>
                     </button>
                 </div>
-                <button type="button" className="flex items-center space-x-2 px-4 py-2 bg-zinc-900 rounded-full text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors border border-zinc-800">
+                <button type="button" className="flex items-center space-x-2 px-4 py-2 bg-[#111] rounded-full text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors border border-zinc-800">
                     <Share2 className="w-5 h-5" />
                     <span className="text-sm font-medium hidden sm:inline">Share</span>
                 </button>
@@ -205,8 +236,8 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
                 onClick={() => setIsSubscribed(!isSubscribed)}
                 className={`flex items-center justify-center space-x-2 px-6 py-2.5 rounded-full font-semibold transition-all w-full sm:w-auto ${
                     isSubscribed 
-                    ? 'bg-zinc-900 text-zinc-300 border border-zinc-800 hover:bg-zinc-800' 
-                    : 'bg-white text-zinc-900 hover:bg-zinc-100 hover:text-red-600'
+                    ? 'bg-[#111] text-zinc-300 border border-zinc-800 hover:bg-zinc-800' 
+                    : 'bg-white text-zinc-900 hover:bg-zinc-100 hover:text-yellow-500'
                 }`}
             >
                 {isSubscribed ? (
@@ -222,7 +253,7 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
 
           {/* Description */}
           <div className="py-4">
-              <div className={`bg-zinc-900/50 rounded-xl p-4 text-sm text-zinc-300 whitespace-pre-line border border-zinc-800 hover:bg-zinc-900 transition-colors cursor-pointer`} onClick={() => setShowFullDesc(!showFullDesc)}>
+              <div className={`bg-[#111]/50 rounded-xl p-4 text-sm text-zinc-300 whitespace-pre-line border border-zinc-800 hover:bg-[#111] transition-colors cursor-pointer`} onClick={() => setShowFullDesc(!showFullDesc)}>
                   <p className={showFullDesc ? '' : 'line-clamp-2'}>
                     <span className="font-bold text-white mb-2 block text-base">About this content</span>
                     {media.description}
@@ -236,10 +267,13 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
       </div>
 
       {/* Sidebar: Related Videos */}
-      <div className="lg:col-span-1">
-        <h3 className="text-lg font-bold text-white mb-4">Up Next</h3>
-        <div className="space-y-4">
-            {related.map(video => (
+      <div className="lg:col-span-1 space-y-6">
+        <AdBanner type="rectangle" />
+        
+        <div>
+            <h3 className="text-lg font-bold text-white mb-4">Up Next</h3>
+            <div className="space-y-4">
+                {related.map(video => (
                 <div 
                     key={video.id} 
                     className="flex space-x-3 group cursor-pointer"
@@ -261,7 +295,7 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
                         )}
                     </div>
                     <div className="flex flex-col flex-1 min-w-0">
-                        <h4 className="text-sm font-semibold text-zinc-200 line-clamp-2 leading-snug group-hover:text-red-500 transition-colors">
+                        <h4 className="text-sm font-semibold text-zinc-200 line-clamp-2 leading-snug group-hover:text-yellow-400 transition-colors">
                             {video.title}
                         </h4>
                         <p className="text-xs text-zinc-400 mt-1">{video.creatorName}</p>
@@ -271,6 +305,7 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
                     </div>
                 </div>
             ))}
+            </div>
         </div>
       </div>
     </div>

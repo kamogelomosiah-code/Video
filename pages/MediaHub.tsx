@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import MediaGrid from '../components/MediaGrid';
+import AdBanner from '../components/AdBanner';
 import { MediaItem, TalentProfile } from '../types';
 import { Play, Grid, Star, Camera, Film, View, ChevronRight } from 'lucide-react';
 import { api } from '../services/api';
@@ -84,10 +85,10 @@ const MediaHub: React.FC<MediaHubProps> = ({ onMediaClick }) => {
               className={`px-4 md:px-6 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-medium whitespace-nowrap transition-all flex items-center flex-shrink-0 active:scale-95 ${
                 activeCategory === cat.id
                   ? 'bg-zinc-100 text-black shadow-lg shadow-white/10'
-                  : 'bg-zinc-900/50 text-zinc-400 hover:text-white border border-zinc-800'
+                  : 'bg-[#111]/50 text-zinc-400 hover:text-white border border-zinc-800'
               }`}
             >
-              <cat.icon className={`w-3.5 h-3.5 mr-2 ${activeCategory === cat.id ? 'text-red-600' : ''}`} />
+              <cat.icon className={`w-3.5 h-3.5 mr-2 ${activeCategory === cat.id ? 'text-yellow-500' : ''}`} />
               {cat.label}
             </button>
           ))}
@@ -102,7 +103,7 @@ const MediaHub: React.FC<MediaHubProps> = ({ onMediaClick }) => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent flex flex-col justify-end p-6 md:p-12">
           <div className="flex items-center space-x-2 mb-3">
-            <span className="bg-red-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white shadow-lg shadow-red-600/30">
+            <span className="bg-yellow-500 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white shadow-lg shadow-yellow-500/30">
               New Premiere
             </span>
           </div>
@@ -129,17 +130,20 @@ const MediaHub: React.FC<MediaHubProps> = ({ onMediaClick }) => {
           </div>
         </div>
       </div>
+      
+      {/* Top Ad Banner */}
+      <AdBanner />
 
       {/* Featured Creators Section */}
       <section className="space-y-4 md:space-y-6">
         <div className="flex items-end justify-between px-1">
           <div>
             <h2 className="text-lg md:text-2xl font-bold text-white flex items-center">
-              <span className="w-1 md:w-1.5 h-6 md:h-8 bg-gradient-to-b from-red-600 to-rose-700 rounded-full mr-3"></span>
+              <span className="w-1 md:w-1.5 h-6 md:h-8 bg-gradient-to-b from-yellow-500 to-yellow-600 rounded-full mr-3"></span>
               Top Creators
             </h2>
           </div>
-          <button className="text-red-500 text-xs md:text-sm font-bold flex items-center hover:text-red-400 transition-colors">
+          <button className="text-yellow-400 text-xs md:text-sm font-bold flex items-center hover:text-yellow-300 transition-colors">
             View All <ChevronRight className="w-3 h-3 md:w-4 md:h-4 ml-1" />
           </button>
         </div>
@@ -150,7 +154,7 @@ const MediaHub: React.FC<MediaHubProps> = ({ onMediaClick }) => {
               key={model.id} 
               className="flex-shrink-0 w-32 md:w-48 group cursor-pointer active:scale-95 transition-transform"
             >
-              <div className="relative aspect-[3/4] rounded-xl md:rounded-2xl overflow-hidden mb-2 border border-zinc-800 group-hover:border-red-600/50 transition-all duration-500">
+              <div className="relative aspect-[3/4] rounded-xl md:rounded-2xl overflow-hidden mb-2 border border-zinc-800 group-hover:border-yellow-500/50 transition-all duration-500">
                 <img 
                   src={model.imageUrl} 
                   alt={model.name} 
@@ -181,15 +185,19 @@ const MediaHub: React.FC<MediaHubProps> = ({ onMediaClick }) => {
       <section className="space-y-6">
         <div>
           <h2 className="text-lg md:text-2xl font-bold text-white mb-4 flex items-center px-1">
-            <span className="w-1 md:w-1.5 h-6 md:h-8 bg-red-600 rounded-full mr-3 shadow-[0_0_15px_rgba(220,38,38,0.4)]"></span>
+            <span className="w-1 md:w-1.5 h-6 md:h-8 bg-yellow-500 rounded-full mr-3 shadow-[0_0_15px_rgba(220,38,38,0.4)]"></span>
             Recommended
           </h2>
           <MediaGrid items={mediaItems} onItemClick={onMediaClick} />
         </div>
         
+        <div className="py-2">
+            <AdBanner />
+        </div>
+        
         <div className="pt-4">
           <h2 className="text-lg md:text-2xl font-bold text-white mb-4 flex items-center px-1">
-            <span className="w-1 md:w-1.5 h-6 md:h-8 bg-rose-700 rounded-full mr-3 shadow-[0_0_15px_rgba(190,18,60,0.4)]"></span>
+            <span className="w-1 md:w-1.5 h-6 md:h-8 bg-yellow-600 rounded-full mr-3 shadow-[0_0_15px_rgba(190,18,60,0.4)]"></span>
             New Arrivals
           </h2>
           <MediaGrid items={[...mediaItems].reverse()} onItemClick={onMediaClick} />

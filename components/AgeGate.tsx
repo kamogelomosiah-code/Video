@@ -26,11 +26,11 @@ const AgeGate: React.FC = () => {
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-xl">
       <div className="max-w-lg w-full mx-4 relative overflow-hidden">
         {/* Glow Effect */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-red-600/20 rounded-full blur-[100px]"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-yellow-500/20 rounded-full blur-[100px]"></div>
         
-        <div className="relative z-10 bg-zinc-900 border border-zinc-800 rounded-3xl p-8 md:p-12 text-center shadow-2xl">
-          <div className="w-20 h-20 bg-zinc-950 rounded-full border-2 border-red-600 flex items-center justify-center mx-auto mb-8 shadow-[0_0_20px_rgba(220,38,38,0.3)]">
-            <span className="text-3xl font-bold text-red-500 font-poppins">18+</span>
+        <div className="relative z-10 bg-[#111] border border-zinc-800 rounded-3xl p-8 md:p-12 text-center shadow-2xl">
+          <div className="w-20 h-20 bg-black rounded-full border-2 border-yellow-500 flex items-center justify-center mx-auto mb-8 shadow-[0_0_20px_rgba(220,38,38,0.3)]">
+            <span className="text-3xl font-bold text-yellow-400 font-poppins">18+</span>
           </div>
 
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">
@@ -44,7 +44,7 @@ const AgeGate: React.FC = () => {
           <div className="space-y-4">
             <button 
               onClick={handleVerify}
-              className="w-full bg-red-600 hover:bg-red-700 text-white text-lg font-bold py-4 rounded-xl transition-all shadow-lg shadow-red-600/20 flex items-center justify-center group"
+              className="w-full bg-yellow-500 hover:bg-yellow-600 text-white text-lg font-bold py-4 rounded-xl transition-all shadow-lg shadow-yellow-500/20 flex items-center justify-center group"
             >
               <span>I am 18+ - Enter Site</span>
               <ArrowRight className="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform" />

@@ -51,7 +51,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ creatorName, price, onClose
   if (isSuccess) {
       return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
-            <div className="bg-zinc-900 border border-green-500/30 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl shadow-green-900/20 transform scale-100 transition-all">
+            <div className="bg-[#111] border border-green-500/30 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl shadow-green-900/20 transform scale-100 transition-all">
                 <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
                     <CheckCircle2 className="w-10 h-10 text-green-500" />
                 </div>
@@ -67,12 +67,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ creatorName, price, onClose
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
-      <div className="bg-zinc-950 border border-zinc-800 w-full max-w-md rounded-3xl shadow-2xl relative overflow-hidden">
+      <div className="bg-black border border-zinc-800 w-full max-w-md rounded-3xl shadow-2xl relative overflow-hidden">
         
         {/* Header */}
-        <div className="p-6 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
+        <div className="p-6 border-b border-zinc-800 flex justify-between items-center bg-[#111]/50">
             <div className="flex items-center space-x-2">
-                <ShieldCheck className="w-5 h-5 text-red-600" />
+                <ShieldCheck className="w-5 h-5 text-yellow-500" />
                 <span className="font-bold text-white tracking-wide">Secure Checkout</span>
             </div>
             <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
@@ -82,7 +82,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ creatorName, price, onClose
 
         <div className="p-6 space-y-6">
             {/* Order Summary */}
-            <div className="bg-zinc-900 rounded-xl p-4 flex justify-between items-center border border-zinc-800">
+            <div className="bg-[#111] rounded-xl p-4 flex justify-between items-center border border-zinc-800">
                 <div>
                     <p className="text-sm text-zinc-400">Monthly Subscription</p>
                     <p className="text-white font-bold">{creatorName}</p>
@@ -105,7 +105,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ creatorName, price, onClose
                             onChange={handleCardChange}
                             placeholder="0000 0000 0000 0000"
                             maxLength={19}
-                            className="w-full bg-black border border-zinc-800 rounded-xl pl-12 pr-4 py-3.5 text-white focus:ring-1 focus:ring-red-600 focus:border-red-600 focus:outline-none transition-all font-mono"
+                            className="w-full bg-black border border-zinc-800 rounded-xl pl-12 pr-4 py-3.5 text-white focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500 focus:outline-none transition-all font-mono"
                             required
                         />
                     </div>
@@ -122,7 +122,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ creatorName, price, onClose
                                 onChange={(e) => setExpiry(e.target.value)}
                                 placeholder="MM/YY"
                                 maxLength={5}
-                                className="w-full bg-black border border-zinc-800 rounded-xl pl-12 pr-4 py-3.5 text-white focus:ring-1 focus:ring-red-600 focus:border-red-600 focus:outline-none transition-all font-mono"
+                                className="w-full bg-black border border-zinc-800 rounded-xl pl-12 pr-4 py-3.5 text-white focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500 focus:outline-none transition-all font-mono"
                                 required
                             />
                         </div>
@@ -137,7 +137,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ creatorName, price, onClose
                                 onChange={(e) => setCvc(e.target.value)}
                                 placeholder="123"
                                 maxLength={3}
-                                className="w-full bg-black border border-zinc-800 rounded-xl pl-12 pr-4 py-3.5 text-white focus:ring-1 focus:ring-red-600 focus:border-red-600 focus:outline-none transition-all font-mono"
+                                className="w-full bg-black border border-zinc-800 rounded-xl pl-12 pr-4 py-3.5 text-white focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500 focus:outline-none transition-all font-mono"
                                 required
                             />
                         </div>
@@ -148,7 +148,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ creatorName, price, onClose
                     <button 
                         type="submit" 
                         disabled={isProcessing}
-                        className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-600/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                        className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-yellow-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                     >
                         {isProcessing ? (
                             <div className="flex items-center space-x-2">

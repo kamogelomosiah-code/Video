@@ -177,11 +177,11 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, currentUser, onMediaC
         {/* Profile Header */}
         <div className="flex flex-col md:flex-row items-start md:items-end -mt-16 md:-mt-20 mb-8 pb-8 border-b border-zinc-800">
           <div className="relative group flex-shrink-0">
-            <div className="w-28 h-28 md:w-40 md:h-40 rounded-full border-4 border-zinc-950 bg-zinc-900 overflow-hidden relative">
+            <div className="w-28 h-28 md:w-40 md:h-40 rounded-full border-4 border-zinc-950 bg-[#111] overflow-hidden relative">
               <img src={profileUser.avatarUrl} alt={profileUser.name} className="w-full h-full object-cover" />
             </div>
             {isOwnProfile && (
-              <button type="button" aria-label="Edit profile picture" onClick={() => avatarInputRef.current?.click()} className="absolute bottom-2 right-2 bg-red-600 text-white p-2 rounded-full shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+              <button type="button" aria-label="Edit profile picture" onClick={() => avatarInputRef.current?.click()} className="absolute bottom-2 right-2 bg-yellow-500 text-white p-2 rounded-full shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                 <Edit3 className="w-4 h-4" />
               </button>
             )}
@@ -201,7 +201,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, currentUser, onMediaC
                 <div className="mt-4 md:mt-0 flex gap-3 w-full md:w-auto">
                   <button 
                     onClick={() => setShowPaymentModal(true)}
-                    className="bg-red-600 hover:bg-red-500 text-white px-6 py-2.5 rounded-full font-bold shadow-lg shadow-red-600/30 flex-1 md:flex-initial flex items-center justify-center text-sm"
+                    className="bg-yellow-500 hover:bg-yellow-400 text-white px-6 py-2.5 rounded-full font-bold shadow-lg shadow-yellow-500/30 flex-1 md:flex-initial flex items-center justify-center text-sm"
                   >
                     <Crown className="w-4 h-4 mr-2" /> Subscribe (R150)
                   </button>
@@ -212,7 +212,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, currentUser, onMediaC
               )}
                {!isOwnProfile && isContentCreator && isSubscribed && (
                   <div className="mt-4 md:mt-0 flex gap-3 w-full md:w-auto">
-                    <button className="bg-zinc-900 border border-zinc-700 text-zinc-300 px-6 py-2.5 rounded-full font-bold flex-1 md:flex-initial flex items-center justify-center text-sm cursor-default">
+                    <button className="bg-[#111] border border-zinc-700 text-zinc-300 px-6 py-2.5 rounded-full font-bold flex-1 md:flex-initial flex items-center justify-center text-sm cursor-default">
                         <CheckCircle className="w-4 h-4 mr-2 text-green-500" /> Subscribed
                     </button>
                   </div>
@@ -239,7 +239,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, currentUser, onMediaC
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex space-x-1 mb-8 bg-zinc-900/50 p-1 rounded-xl w-full sm:w-fit border border-zinc-800 overflow-x-auto no-scrollbar">
+        <div className="flex space-x-1 mb-8 bg-[#111]/50 p-1 rounded-xl w-full sm:w-fit border border-zinc-800 overflow-x-auto no-scrollbar">
           <button type="button" onClick={() => { setActiveTab('videos'); setIsUploading(false); }} className={`flex-1 sm:flex-initial px-4 sm:px-6 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${ activeTab === 'videos' && !isUploading ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-400 hover:text-white' }`}>Content</button>
           <button type="button" onClick={() => { setActiveTab('about'); setIsUploading(false); }} className={`flex-1 sm:flex-initial px-4 sm:px-6 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${ activeTab === 'about' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-400 hover:text-white' }`}>About</button>
           {isOwnProfile && (
@@ -285,9 +285,9 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, currentUser, onMediaC
                                       <div className="filter blur-xl grayscale opacity-50 pointer-events-none scale-95 transition-all select-none">
                                           <MediaGrid items={hiddenContent} onItemClick={() => {}} />
                                       </div>
-                                      <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-md flex flex-col items-center justify-center text-center p-4 rounded-3xl border border-red-600/20 shadow-2xl">
-                                          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-red-600/10 rounded-full flex items-center justify-center mb-4 sm:mb-6 border border-red-600/30 shadow-[0_0_30px_rgba(220,38,38,0.2)]">
-                                              <Lock className="w-8 h-8 sm:w-10 sm:h-10 text-red-500" />
+                                      <div className="absolute inset-0 bg-black/60 backdrop-blur-md flex flex-col items-center justify-center text-center p-4 rounded-3xl border border-yellow-500/20 shadow-2xl">
+                                          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-yellow-500/10 rounded-full flex items-center justify-center mb-4 sm:mb-6 border border-yellow-500/30 shadow-[0_0_30px_rgba(220,38,38,0.2)]">
+                                              <Lock className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-400" />
                                           </div>
                                           <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Subscribe to See More</h3>
                                           <p className="text-zinc-400 mt-3 max-w-sm text-base sm:text-lg leading-relaxed">
@@ -295,7 +295,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, currentUser, onMediaC
                                           </p>
                                           <button 
                                             onClick={() => setShowPaymentModal(true)}
-                                            className="mt-8 bg-red-600 hover:bg-red-500 text-white px-8 sm:px-10 py-3 sm:py-4 rounded-full font-bold flex items-center shadow-lg shadow-red-600/30 transition-all active:scale-95 text-sm sm:text-base"
+                                            className="mt-8 bg-yellow-500 hover:bg-yellow-400 text-white px-8 sm:px-10 py-3 sm:py-4 rounded-full font-bold flex items-center shadow-lg shadow-yellow-500/30 transition-all active:scale-95 text-sm sm:text-base"
                                           >
                                               <Crown className="w-5 h-5 sm:w-6 sm:h-6 mr-3" />
                                               Subscribe for R150 / Month
@@ -306,7 +306,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, currentUser, onMediaC
                               )}
                           </div>
                       ) : (
-                        <div className="text-center py-20 bg-zinc-900/50 rounded-3xl border-2 border-dashed border-zinc-800">
+                        <div className="text-center py-20 bg-[#111]/50 rounded-3xl border-2 border-dashed border-zinc-800">
                           <Camera className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
                           <h3 className="text-xl font-bold text-white">No content available</h3>
                           {isOwnProfile ? (
@@ -314,7 +314,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, currentUser, onMediaC
                               <p className="text-zinc-400 mt-2 mb-8">Share your first exclusive video or photo with your fans.</p>
                               <button 
                                 onClick={() => setIsUploading(true)}
-                                className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-full font-bold transition-all shadow-lg shadow-red-600/20"
+                                className="bg-yellow-500 hover:bg-yellow-600 text-white px-8 py-3 rounded-full font-bold transition-all shadow-lg shadow-yellow-500/20"
                               >
                                 Get Started
                               </button>
@@ -326,7 +326,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, currentUser, onMediaC
                       )}
                   </div>
                ) : (
-                  <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-zinc-800 rounded-3xl bg-zinc-900/30">
+                  <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-zinc-800 rounded-3xl bg-[#111]/30">
                     <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center mb-6">
                       <Grid className="w-8 h-8 text-zinc-500" />
                     </div>
@@ -338,7 +338,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, currentUser, onMediaC
           )}
           
           {activeTab === 'about' && (
-              <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 sm:p-8 max-w-2xl">
+              <div className="bg-[#111] rounded-2xl border border-zinc-800 p-6 sm:p-8 max-w-2xl">
                 <h3 className="text-xl font-bold text-white mb-4">About {profileUser.name}</h3>
                 <p className="text-zinc-400 leading-relaxed mb-6 text-sm sm:text-base">
                   {isContentCreator 
@@ -359,7 +359,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, currentUser, onMediaC
           )}
 
           {isOwnProfile && activeTab === 'settings' && (
-            <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 sm:p-8 max-w-2xl space-y-10">
+            <div className="bg-[#111] rounded-2xl border border-zinc-800 p-6 sm:p-8 max-w-2xl space-y-10">
                <div>
                   <h3 className="text-xl font-bold text-white mb-6">Account Settings</h3>
                   <div className="space-y-6">
@@ -368,7 +368,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, currentUser, onMediaC
                         <p className="text-white font-medium">Email Notifications</p>
                         <p className="text-sm text-zinc-500">Receive updates about your content and fans</p>
                       </div>
-                      <div className="w-11 h-6 bg-red-600 rounded-full relative cursor-pointer">
+                      <div className="w-11 h-6 bg-yellow-500 rounded-full relative cursor-pointer">
                         <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
                       </div>
                     </div>
@@ -380,20 +380,20 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, currentUser, onMediaC
                  <form onSubmit={handleCredentialsSubmit} className="space-y-4">
                     <div>
                       <label className="text-sm text-zinc-400">Display Name</label>
-                      <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 mt-2 text-white focus:ring-1 focus:ring-red-600 focus:border-red-600 focus:outline-none transition-all"/>
+                      <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 mt-2 text-white focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500 focus:outline-none transition-all"/>
                     </div>
                     <div>
                       <label className="text-sm text-zinc-400">New Password</label>
-                      <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 mt-2 text-white focus:ring-1 focus:ring-red-600 focus:border-red-600 focus:outline-none transition-all" placeholder="Leave blank to keep current password"/>
+                      <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 mt-2 text-white focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500 focus:outline-none transition-all" placeholder="Leave blank to keep current password"/>
                     </div>
                     <div>
                       <label className="text-sm text-zinc-400">Confirm New Password</label>
-                      <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 mt-2 text-white focus:ring-1 focus:ring-red-600 focus:border-red-600 focus:outline-none transition-all"/>
+                      <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 mt-2 text-white focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500 focus:outline-none transition-all"/>
                     </div>
-                    {credentialError && <p className="text-sm text-red-500 flex items-center"><AlertCircle className="w-4 h-4 mr-2"/>{credentialError}</p>}
+                    {credentialError && <p className="text-sm text-yellow-400 flex items-center"><AlertCircle className="w-4 h-4 mr-2"/>{credentialError}</p>}
                     {credentialSuccess && <p className="text-sm text-green-500 flex items-center"><CheckCircle className="w-4 h-4 mr-2"/>{credentialSuccess}</p>}
                     <div className="flex justify-end pt-2">
-                      <button type="submit" className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold w-full sm:w-auto">Save Changes</button>
+                      <button type="submit" className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded-lg font-semibold w-full sm:w-auto">Save Changes</button>
                     </div>
                  </form>
                </div>

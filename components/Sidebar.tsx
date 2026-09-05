@@ -23,7 +23,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, activePage, onNavigate, onAdmin
     <div className="w-64 bg-black border-r border-zinc-900 flex flex-col justify-between h-full safe-area-pb">
       <div>
         <div className="h-16 flex items-center justify-start px-6 border-b border-zinc-900">
-          <div className="w-8 h-8 bg-gradient-to-br from-red-600 to-rose-700 rounded-lg flex items-center justify-center shadow-lg shadow-red-600/20">
+          <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-lg shadow-yellow-500/20">
             <Zap className="text-white w-5 h-5" fill="currentColor" />
           </div>
           <span className="ml-3 font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
@@ -37,12 +37,12 @@ const Sidebar: React.FC<SidebarProps> = ({ user, activePage, onNavigate, onAdmin
               key={item.id}
               onClick={item.action}
               className={`w-full flex items-center justify-start px-4 py-3 rounded-xl transition-all duration-200 group ${
-                activePage === item.id ? 'bg-red-600/10 text-red-500' : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
+                activePage === item.id ? 'bg-yellow-500/10 text-yellow-400' : 'text-zinc-400 hover:bg-[#111] hover:text-zinc-200'
               }`}
             >
               <item.icon className={`w-6 h-6 ${activePage === item.id ? 'stroke-2' : 'stroke-1.5'}`} />
               <span className={`ml-3 font-medium ${activePage === item.id ? 'font-semibold' : ''}`}>{item.label}</span>
-              {activePage === item.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.6)]"></div>}
+              {activePage === item.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(220,38,38,0.6)]"></div>}
             </button>
           ))}
           
@@ -51,20 +51,20 @@ const Sidebar: React.FC<SidebarProps> = ({ user, activePage, onNavigate, onAdmin
               type="button"
               onClick={onAdminClick}
               className={`w-full flex items-center justify-start px-4 py-3 rounded-xl transition-all duration-200 group mt-4 border-t border-zinc-900 pt-6 ${
-                activePage === 'admin-dashboard' ? 'bg-red-600/10 text-red-500' : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
+                activePage === 'admin-dashboard' ? 'bg-yellow-500/10 text-yellow-400' : 'text-zinc-400 hover:bg-[#111] hover:text-zinc-200'
               }`}
             >
               <Database className={`w-6 h-6 ${activePage === 'admin-dashboard' ? 'stroke-2' : 'stroke-1.5'}`} />
               <span className={`ml-3 font-medium ${activePage === 'admin-dashboard' ? 'font-semibold' : ''}`}>Admin Panel</span>
-              {activePage === 'admin-dashboard' && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.6)]"></div>}
+              {activePage === 'admin-dashboard' && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(220,38,38,0.6)]"></div>}
             </button>
           )}
 
         </nav>
       </div>
       <div className="p-4">
-        <div className="bg-zinc-900 rounded-xl p-4 border border-zinc-800">
-          <div className="flex items-center space-x-2 text-red-500 mb-2">
+        <div className="bg-[#111] rounded-xl p-4 border border-zinc-800">
+          <div className="flex items-center space-x-2 text-yellow-400 mb-2">
             <Shield className="w-4 h-4" />
             <span className="text-xs font-semibold uppercase tracking-wider">Safety First</span>
           </div>

@@ -106,8 +106,8 @@ const TalentDirectory: React.FC = () => {
           </div>
       )}
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl md:rounded-3xl p-6 md:p-8 mb-8 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-red-600/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+      <div className="bg-[#111] border border-zinc-800 rounded-2xl md:rounded-3xl p-6 md:p-8 mb-8 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-yellow-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
         <div className="relative z-10">
             <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Find Verified Models</h1>
             <p className="text-zinc-400 mb-6 max-w-xl text-sm md:text-base">
@@ -128,14 +128,14 @@ const TalentDirectory: React.FC = () => {
                         />
                     </div>
                     {showSuggestions && (
-                        <div ref={suggestionsRef} className="absolute top-full mt-2 w-full bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg z-10 overflow-hidden animate-fade-in-up">
+                        <div ref={suggestionsRef} className="absolute top-full mt-2 w-full bg-[#111] border border-zinc-800 rounded-xl shadow-lg z-10 overflow-hidden animate-fade-in-up">
                             <ul className="py-1">
                                 {locationSuggestions.map((suggestion, index) => (
                                     <li key={index}>
                                         <button
                                             type="button"
                                             onClick={() => handleSuggestionClick(suggestion)}
-                                            className="w-full text-left px-4 py-2 text-zinc-300 hover:bg-red-600/10 hover:text-red-500 transition-colors text-sm"
+                                            className="w-full text-left px-4 py-2 text-zinc-300 hover:bg-yellow-500/10 hover:text-yellow-400 transition-colors text-sm"
                                         >
                                             {suggestion}
                                         </button>
@@ -155,7 +155,7 @@ const TalentDirectory: React.FC = () => {
                             onChange={(e) => setSmartMatchQuery(e.target.value)}
                         />
                         {isMatching && (
-                             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-red-400 animate-pulse hidden sm:block">
+                             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-yellow-300 animate-pulse hidden sm:block">
                                 AI Matching...
                             </span>
                         )}
@@ -164,7 +164,7 @@ const TalentDirectory: React.FC = () => {
                     <button 
                         type="button"
                         onClick={handleSmartMatch}
-                        className="bg-red-600 hover:bg-red-700 text-white px-4 md:px-6 py-2 rounded-lg font-medium transition-colors ml-2 shadow-lg shadow-red-600/20 text-sm md:text-base whitespace-nowrap"
+                        className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 md:px-6 py-2 rounded-lg font-medium transition-colors ml-2 shadow-lg shadow-yellow-500/20 text-sm md:text-base whitespace-nowrap"
                     >
                         Search
                     </button>
@@ -175,7 +175,7 @@ const TalentDirectory: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredTalent.map((talent) => (
-          <div key={talent.id} className="bg-black rounded-2xl border border-zinc-800 overflow-hidden hover:border-red-600/50 transition-all duration-300 group flex flex-col h-full hover:shadow-2xl hover:shadow-red-600/10">
+          <div key={talent.id} className="bg-black rounded-2xl border border-zinc-800 overflow-hidden hover:border-yellow-500/50 transition-all duration-300 group flex flex-col h-full hover:shadow-2xl hover:shadow-yellow-500/10">
             <div className="relative h-64 md:h-72">
               <img src={talent.imageUrl} alt={talent.name} className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
@@ -210,7 +210,7 @@ const TalentDirectory: React.FC = () => {
 
                 <div className="flex flex-wrap gap-2 mb-6">
                     {talent.tags.slice(0,3).map(tag => (
-                        <span key={tag} className="px-2.5 py-1 bg-zinc-900 border border-zinc-800 rounded-md text-xs text-zinc-400">
+                        <span key={tag} className="px-2.5 py-1 bg-[#111] border border-zinc-800 rounded-md text-xs text-zinc-400">
                             {tag}
                         </span>
                     ))}
@@ -226,14 +226,14 @@ const TalentDirectory: React.FC = () => {
                             type="button"
                             onClick={() => handleMessage(talent.name)}
                             aria-label={`Message ${talent.name}`}
-                            className="p-2.5 rounded-xl bg-zinc-900 text-red-500 border border-zinc-800 hover:bg-red-600 hover:text-white transition-all"
+                            className="p-2.5 rounded-xl bg-[#111] text-yellow-400 border border-zinc-800 hover:bg-yellow-500 hover:text-white transition-all"
                         >
                             <MessageCircle className="w-5 h-5" />
                         </button>
                         <button 
                             type="button"
                             onClick={() => handleBook(talent.name)}
-                            className="px-4 py-2.5 rounded-xl bg-red-600 text-white font-medium hover:bg-red-500 transition-all shadow-lg shadow-red-600/20 flex items-center"
+                            className="px-4 py-2.5 rounded-xl bg-yellow-500 text-white font-medium hover:bg-yellow-400 transition-all shadow-lg shadow-yellow-500/20 flex items-center"
                         >
                             <Calendar className="w-4 h-4 mr-2" />
                             Book
@@ -244,7 +244,7 @@ const TalentDirectory: React.FC = () => {
             
             <div className={`px-2 py-1 text-center text-[10px] font-bold uppercase tracking-widest ${
                 talent.availability === 'Available Now' ? 'bg-green-500/10 text-green-500' : 
-                talent.availability === 'This Week' ? 'bg-blue-500/10 text-blue-500' : 'bg-red-500/10 text-red-500'
+                talent.availability === 'This Week' ? 'bg-blue-500/10 text-blue-500' : 'bg-yellow-400/10 text-yellow-400'
             }`}>
                 {talent.availability}
             </div>

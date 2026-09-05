@@ -8,6 +8,10 @@ export const api = {
   system: {
     init: async (): Promise<void> => {
       await store.initFromServer();
+    },
+    getActivityLogs: async () => {
+      await delay(200);
+      return store.getActivityLogs();
     }
   },
   auth: {
@@ -75,6 +79,14 @@ export const api = {
     getRelated: async (id: string): Promise<MediaItem[]> => {
         await delay(200);
         return store.getMedia().filter(m => m.id !== id).slice(0, 6);
+    },
+    importBulk: async (items: MediaItem[]): Promise<void> => {
+        await delay(1000);
+        store.importMedia(items);
+    },
+    rate: async (mediaId: string, userId: string, isLike: boolean): Promise<void> => {
+        await delay(200);
+        store.rateMedia(mediaId, userId, isLike);
     }
   },
 

@@ -120,15 +120,15 @@ const App: React.FC = () => {
 
   if (isInitializing) {
     return (
-      <div className="h-screen bg-zinc-950 text-zinc-50 font-poppins flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+      <div className="h-screen bg-black text-zinc-50 font-poppins flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500"></div>
       </div>
     );
   }
 
   if (currentPage === 'auth') {
     return (
-      <div className="h-screen bg-zinc-950 text-zinc-50 font-poppins">
+      <div className="h-screen bg-black text-zinc-50 font-poppins">
         <Auth onLogin={handleLogin} onNavigateBack={() => setCurrentPage('media')} />
       </div>
     );
@@ -140,7 +140,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="flex h-full bg-zinc-950 text-zinc-50 overflow-hidden font-poppins">
+    <div className="flex h-full bg-black text-zinc-50 overflow-hidden font-poppins">
       <AgeGate />
 
       <Sidebar

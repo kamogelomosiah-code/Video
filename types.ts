@@ -44,6 +44,16 @@ export interface MediaItem {
   uploadedAt: string;
   price?: number;
   redirectUrl?: string;
+  likes?: string[]; // Array of user IDs
+  dislikes?: string[]; // Array of user IDs
+}
+
+export interface ActivityLog {
+  id: string;
+  actionType: 'signup' | 'rating' | 'import' | 'error' | 'upload' | 'login';
+  userId?: string;
+  details: string;
+  timestamp: string;
 }
 
 export interface TalentProfile {

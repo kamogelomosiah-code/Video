@@ -1,4 +1,4 @@
-import { MediaItem, User, Comment, UserRole, Notification, TalentProfile, Message } from '../types';
+import { MediaItem, User, Comment, UserRole, Notification, TalentProfile, Message, ActivityLog } from '../types';
 
 // Seed Data Generators
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -101,6 +101,7 @@ class StoreService {
   private notifications: Notification[] = [];
   private talentProfiles: TalentProfile[] = [];
   private messages: Message[] = [];
+  private activityLogs: ActivityLog[] = [];
   private siteSettings: SiteSettings = { featuredMediaId: 'seed-0' };
 
   constructor() {
@@ -149,6 +150,7 @@ class StoreService {
           if (data.notifications) this.notifications = data.notifications;
           if (data.talentProfiles) this.talentProfiles = data.talentProfiles;
           if (data.messages) this.messages = data.messages;
+          if (data.activityLogs) this.activityLogs = data.activityLogs;
           if (data.siteSettings) this.siteSettings = data.siteSettings;
           
           let adminUser = this.users.find(u => u.role === UserRole.ADMIN);
@@ -174,14 +176,15 @@ class StoreService {
       const storedComments = localStorage.getItem('ac_comments');
       const storedNotifs = localStorage.getItem('ac_notifications');
       const storedTalent = localStorage.getItem('ac_talent');
+      const storedLogs = localStorage.getItem('ac_activityLogs');
       const storedSettings = localStorage.getItem('ac_settings');
-
 
       if (storedMedia) this.media = JSON.parse(storedMedia);
       if (storedUsers) this.users = JSON.parse(storedUsers);
       if (storedComments) this.comments = JSON.parse(storedComments);
       if (storedNotifs) this.notifications = JSON.parse(storedNotifs);
       if (storedTalent) this.talentProfiles = JSON.parse(storedTalent);
+      if (storedLogs) this.activityLogs = JSON.parse(storedLogs);
       if (storedSettings) this.siteSettings = JSON.parse(storedSettings);
     } catch (e) {
       console.error("Failed to load store", e);
@@ -199,6 +202,7 @@ class StoreService {
       notifications: this.notifications,
       talentProfiles: this.talentProfiles,
       messages: this.messages,
+      activityLogs: this.activityLogs,
       siteSettings: this.siteSettings
     };
 
@@ -207,6 +211,7 @@ class StoreService {
     localStorage.setItem('ac_comments', JSON.stringify(dataToSave.comments));
     localStorage.setItem('ac_notifications', JSON.stringify(dataToSave.notifications));
     localStorage.setItem('ac_talent', JSON.stringify(dataToSave.talentProfiles));
+    localStorage.setItem('ac_activityLogs', JSON.stringify(dataToSave.activityLogs));
     localStorage.setItem('ac_settings', JSON.stringify(dataToSave.siteSettings));
 
     // Save to server asynchronously
@@ -222,6 +227,22 @@ class StoreService {
           { id: 'n1', userId: 'guest', type: 'system', message: 'Welcome to Elysian! Please verify your age to view explicit content.', read: false, createdAt: '2 mins ago' },
           { id: 'n2', userId: 'guest', type: 'upload', message: 'Roxy Red uploaded a new exclusive video.', read: false, createdAt: '1 hour ago' }
       ];
+  }
+
+  // --- Activity Logging ---
+  getActivityLogs = (): ActivityLog[] => [...this.activityLogs].sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  
+  logActivity = (actionType: ActivityLog['actionType'], details: string, userId?: string) => {
+    const newLog: ActivityLog = {
+      id: generateId(),
+      actionType,
+      details,
+      userId,
+      timestamp: new Date().toISOString()
+    };
+    this.activityLogs.unshift(newLog);
+    if (this.activityLogs.length > 500) this.activityLogs.pop(); // Keep last 500
+    this.saveToStorage();
   }
 
   // --- Session Management ---
@@ -243,10 +264,11 @@ class StoreService {
   getMedia = (): MediaItem[] => [...this.media].sort((a, b) => new Date(b.uploadedAt === 'Just now' ? Date.now() : 0).getTime() - new Date(a.uploadedAt === 'Just now' ? Date.now() : 0).getTime());
   getMediaById = (id: string): MediaItem | undefined => this.media.find(m => m.id === id);
   addMedia = (item: Omit<MediaItem, 'id' | 'views' | 'uploadedAt'>): MediaItem => {
-    const newItem: MediaItem = { ...item, id: generateId(), views: 0, uploadedAt: 'Just now' };
+    const newItem: MediaItem = { ...item, id: generateId(), views: 0, uploadedAt: 'Just now', likes: [], dislikes: [] };
     this.media.unshift(newItem);
     this.addNotification({ userId: 'guest', type: 'upload', message: `${item.creatorName} just uploaded: ${item.title}` });
     this.saveToStorage(); 
+    this.logActivity('upload', `User ${item.userId} uploaded media: ${item.title}`, item.userId);
     return newItem;
   }
   updateMedia = (id: string, updates: Partial<MediaItem>): MediaItem | undefined => {
@@ -270,6 +292,32 @@ class StoreService {
     });
     this.media = Array.from(mediaMap.values());
     this.saveToStorage();
+    this.logActivity('import', `Mass imported ${items.length} media items`);
+  }
+
+  rateMedia = (mediaId: string, userId: string, isLike: boolean) => {
+    this.media = this.media.map(item => {
+      if (item.id === mediaId) {
+        let likes = item.likes || [];
+        let dislikes = item.dislikes || [];
+        
+        // Remove existing rating from this user
+        likes = likes.filter(id => id !== userId);
+        dislikes = dislikes.filter(id => id !== userId);
+        
+        // Add new rating
+        if (isLike) {
+          likes.push(userId);
+        } else {
+          dislikes.push(userId);
+        }
+        
+        return { ...item, likes, dislikes };
+      }
+      return item;
+    });
+    this.saveToStorage();
+    this.logActivity('rating', `User rated media ${mediaId} (${isLike ? 'thumbs up' : 'thumbs down'})`, userId);
   }
 
   // --- Users ---
@@ -285,6 +333,7 @@ class StoreService {
         return undefined;
     }
     
+    this.logActivity('login', `User logged in`, user.id);
     return user;
   };
 
@@ -292,6 +341,7 @@ class StoreService {
     const newUser = { ...user, id: generateId(), subscriptions: [] };
     this.users.push(newUser);
     this.saveToStorage();
+    this.logActivity('signup', `New user registered: ${user.name}`, newUser.id);
     return newUser;
   }
 
