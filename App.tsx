@@ -1,0 +1,202 @@
+import React, { useState, useEffect } from 'react';
+import { User, UserRole } from './types';
+import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
+import MediaHub from './pages/MediaHub';
+import TalentDirectory from './pages/TalentDirectory';
+import MediaView from './pages/MediaView';
+import VerificationModal from './components/VerificationModal';
+import UserProfile from './pages/UserProfile';
+import AdminDashboard from './pages/AdminDashboard';
+import Auth from './pages/Auth';
+import AgeGate from './components/AgeGate';
+import BottomNav from './components/BottomNav';
+import { generateAvatar } from './services/store';
+import { api } from './services/api';
+
+import MessagesPage from './pages/Messages';
+
+const GUEST_USER: User = {
+  id: 'guest',
+  name: 'Guest',
+  role: UserRole.CONSUMER,
+  verified: false,
+  avatarUrl: generateAvatar('Guest')
+};
+
+const App: React.FC = () => {
+  // Persistence Logic for GitHub Pages / Static Hosting Refresh Support
+  const [currentPage, setCurrentPage] = useState<'auth' | 'media' | 'directory' | 'messages' | 'profile' | 'view' | 'admin-dashboard'>(() => {
+    return (localStorage.getItem('elysian_current_page') as any) || 'media';
+  });
+  
+  const [selectedMediaId, setSelectedMediaId] = useState<string | null>(() => {
+    return localStorage.getItem('elysian_media_id');
+  });
+  
+  const [viewingUserId, setViewingUserId] = useState<string | null>(() => {
+    return localStorage.getItem('elysian_viewing_user_id');
+  });
+
+  const [isVerificationOpen, setIsVerificationOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  // Auth State
+  const [currentUser, setCurrentUser] = useState<User>(GUEST_USER);
+
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  useEffect(() => {
+    const initSession = async () => {
+        await api.system.init();
+        const sessionUser = await api.auth.getSession();
+        if (sessionUser) {
+          setCurrentUser(sessionUser);
+        }
+        setIsInitializing(false);
+    };
+    initSession();
+  }, []);
+
+  // Save navigation state
+  useEffect(() => {
+    localStorage.setItem('elysian_current_page', currentPage);
+    if (selectedMediaId) localStorage.setItem('elysian_media_id', selectedMediaId);
+    else localStorage.removeItem('elysian_media_id');
+    
+    if (viewingUserId) localStorage.setItem('elysian_viewing_user_id', viewingUserId);
+    else localStorage.removeItem('elysian_viewing_user_id');
+  }, [currentPage, selectedMediaId, viewingUserId]);
+
+  const handleLogin = (user: User) => {
+    // Session is saved inside api.auth logic (via store) but we update local state
+    setCurrentUser(user);
+    if (user.role === UserRole.ADMIN) {
+      setCurrentPage('admin-dashboard');
+    } else {
+      setCurrentPage('media');
+    }
+  };
+
+  const handleLogout = async () => {
+    await api.auth.logout();
+    setCurrentUser(GUEST_USER);
+    setCurrentPage('media');
+    setViewingUserId(null);
+  };
+  
+  const handleUserUpdate = (user: User) => {
+    setCurrentUser(user);
+  };
+
+  const handleMediaClick = (id: string) => {
+    // Navigate to view media first, which then links to profile.
+    setSelectedMediaId(id);
+    setCurrentPage('view');
+    setIsSidebarOpen(false);
+  };
+
+  const handleNavigate = (page: 'media' | 'directory' | 'messages' | 'profile', userId?: string) => {
+    if (page === 'profile' || page === 'messages') {
+      if (currentUser.id === 'guest' && !userId) {
+        setCurrentPage('auth');
+        setIsSidebarOpen(false);
+        return;
+      }
+      setViewingUserId(userId || currentUser.id);
+    } else {
+      setViewingUserId(null);
+    }
+    
+    setCurrentPage(page);
+    setSelectedMediaId(null);
+    setIsSidebarOpen(false);
+  };
+
+  const handleAdminNav = () => {
+    setCurrentPage('admin-dashboard');
+    setIsSidebarOpen(false);
+  }
+
+  if (isInitializing) {
+    return (
+      <div className="h-screen bg-zinc-950 text-zinc-50 font-poppins flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+      </div>
+    );
+  }
+
+  if (currentPage === 'auth') {
+    return (
+      <div className="h-screen bg-zinc-950 text-zinc-50 font-poppins">
+        <Auth onLogin={handleLogin} onNavigateBack={() => setCurrentPage('media')} />
+      </div>
+    );
+  }
+  
+  let activeSidebarPage: string = currentPage;
+  if (currentPage === 'view') {
+    activeSidebarPage = 'media';
+  }
+
+  return (
+    <div className="flex h-full bg-zinc-950 text-zinc-50 overflow-hidden font-poppins">
+      <AgeGate />
+
+      <Sidebar
+        user={currentUser}
+        activePage={activeSidebarPage as any}
+        onNavigate={handleNavigate}
+        onAdminClick={handleAdminNav}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
+
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+        <Navbar 
+          user={currentUser} 
+          onVerifyClick={() => setIsVerificationOpen(true)}
+          onLoginClick={() => setCurrentPage('auth')}
+          onAdminClick={handleAdminNav}
+          onProfileClick={() => handleNavigate('profile')}
+          onLogout={handleLogout}
+          onMenuClick={() => setIsSidebarOpen(true)}
+        />
+        
+        {/* Added pb-24 to account for mobile BottomNav */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 scroll-smooth">
+          <div className="max-w-7xl mx-auto">
+             {currentPage === 'media' && <MediaHub onMediaClick={handleMediaClick} />}
+             {currentPage === 'view' && selectedMediaId && (
+               <MediaView mediaId={selectedMediaId} currentUser={currentUser} onBack={() => setCurrentPage('media')} onRelatedClick={handleMediaClick} />
+             )}
+             {currentPage === 'directory' && <TalentDirectory />}
+             {currentPage === 'messages' && <MessagesPage currentUser={currentUser} onBack={() => setCurrentPage('media')} />}
+             {currentPage === 'profile' && (
+               <UserProfile 
+                userId={viewingUserId || currentUser.id} 
+                currentUser={currentUser} 
+                onMediaClick={(id) => {
+                   setSelectedMediaId(id);
+                   setCurrentPage('view');
+                }} 
+                onUserUpdate={handleUserUpdate} 
+               />
+             )}
+             {currentPage === 'admin-dashboard' && <AdminDashboard user={currentUser} />}
+          </div>
+        </main>
+
+        <BottomNav 
+          activePage={activeSidebarPage} 
+          onNavigate={handleNavigate} 
+          onMenuClick={() => setIsSidebarOpen(true)}
+        />
+      </div>
+
+      {isVerificationOpen && <VerificationModal onClose={() => setIsVerificationOpen(false)} />}
+    </div>
+  );
+};
+
+export default App;
