@@ -59,6 +59,7 @@ const CMPBanner: React.FC<CMPBannerProps> = ({ onOpenLegalDocs }) => {
       if ((window as any).__loadAdSense) {
         (window as any).__loadAdSense();
       }
+      window.dispatchEvent(new Event('elysian_cmp_consent_changed'));
       setIsVisible(false);
     } catch (e) {
       console.error(e);
@@ -68,6 +69,7 @@ const CMPBanner: React.FC<CMPBannerProps> = ({ onOpenLegalDocs }) => {
   const handleDoNotConsent = () => {
     try {
       localStorage.setItem('elysian_cmp_consent', 'denied');
+      window.dispatchEvent(new Event('elysian_cmp_consent_changed'));
       setIsVisible(false);
     } catch (e) {
       console.error(e);
@@ -84,6 +86,7 @@ const CMPBanner: React.FC<CMPBannerProps> = ({ onOpenLegalDocs }) => {
       } else {
         localStorage.setItem('elysian_cmp_consent', 'partially-granted');
       }
+      window.dispatchEvent(new Event('elysian_cmp_consent_changed'));
       setShowManageModal(false);
       setIsVisible(false);
     } catch (e) {
