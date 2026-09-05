@@ -67,14 +67,31 @@ const UploadMedia: React.FC<UploadMediaProps> = ({ user, onCancel, onUploadCompl
     }, 100);
   };
 
-  const generateAITags = () => {
+  const generateAITags = async () => {
+    if (uploadMode === 'link' && !externalUrl) {
+      alert("Please enter a Target Link (External URL) first so the AI can scrape and skim the data from there!");
+      return;
+    }
+    
     setIsProcessing(true);
-    // Simulate AI generation
-    setTimeout(() => {
-      setTags(['Exclusive', 'Adult', 'Model', 'Uncensored', 'SouthAfrica']);
-      setDescription("Exclusive access to my latest content session. Shot in high definition for my VIP fans.");
+    try {
+      const targetUrl = uploadMode === 'link' ? externalUrl : `https://elysian-media-placeholder.com/search?title=${encodeURIComponent(title || "exclusive video")}`;
+      const result = await api.media.scrapeMetadata(targetUrl);
+      if (result.title) {
+        setTitle(result.title);
+      }
+      if (result.description) {
+        setDescription(result.description);
+      }
+      if (result.tags && result.tags.length > 0) {
+        setTags(result.tags);
+      }
+    } catch (e) {
+      console.error("AI auto-fill failed:", e);
+      alert("AI Generation failed. Please try again.");
+    } finally {
       setIsProcessing(false);
-    }, 1500);
+    }
   };
 
   const handlePublish = async () => {

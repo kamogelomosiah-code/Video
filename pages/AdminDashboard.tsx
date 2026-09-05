@@ -12,7 +12,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, MediaItem, UserRole, TalentProfile, ActivityLog } from '../types';
 import { api } from '../services/api';
-import { ShieldCheck, Video, Users, PlusCircle, Edit, Trash2, X, Save, Settings, Star, MapPin, UploadCloud, Menu, ChevronDown } from 'lucide-react';
+import { ShieldCheck, Video, Users, PlusCircle, Edit, Trash2, X, Save, Settings, Star, MapPin, UploadCloud, Menu, ChevronDown, Wand2 } from 'lucide-react';
 import AdminBulkImport from './AdminUpload';
 
 interface AdminDashboardProps {
@@ -621,6 +621,7 @@ const MediaFormModal = ({ media, onClose, onSubmit, currentUser }: any) => {
         isPremium: media?.isPremium || false, 
         price: media?.price || '' 
     }); 
+    const [isAIProcessing, setIsAIProcessing] = useState(false);
     
     const handleChange = (e: any) => { 
         const { name, value, type, checked } = e.target; 
@@ -637,7 +638,52 @@ const MediaFormModal = ({ media, onClose, onSubmit, currentUser }: any) => {
         <ModalWrapper title={media ? 'Edit Media' : 'Add New Media'} onClose={onClose} onSubmit={handleSubmit}> 
             <FormInput label="Title" name="title" value={formData.title} onChange={handleChange} placeholder="Media Title" required /> 
             <FormTextarea label="Description" name="description" value={formData.description} onChange={handleChange} placeholder="Detailed description..." /> 
-            <FormInput label="Source URL" name="sourceUrl" value={formData.sourceUrl} onChange={handleChange} placeholder="e.g., https://example.com/video.mp4" required /> 
+            
+            <div>
+                <div className="flex items-center justify-between mb-2">
+                    <label htmlFor="sourceUrl" className="text-sm font-semibold text-zinc-300">Source URL (Video Link)</label>
+                    <button
+                        type="button"
+                        disabled={isAIProcessing}
+                        onClick={async () => {
+                            if (!formData.sourceUrl) {
+                                alert("Please enter a Source URL (Video Link) first so the AI can scrape it!");
+                                return;
+                            }
+                            setIsAIProcessing(true);
+                            try {
+                                const result = await api.media.scrapeMetadata(formData.sourceUrl);
+                                setFormData(prev => ({
+                                    ...prev,
+                                    title: result.title || prev.title,
+                                    description: result.description || prev.description,
+                                    tags: result.tags ? result.tags.join(', ') : prev.tags
+                                }));
+                            } catch (e) {
+                                console.error(e);
+                                alert("AI Scraping failed. Make sure the link is valid and try again.");
+                            } finally {
+                                setIsAIProcessing(false);
+                            }
+                        }}
+                        className="text-xs flex items-center text-yellow-500 hover:text-yellow-400 font-bold transition-colors disabled:opacity-50 cursor-pointer select-none"
+                    >
+                        <Wand2 className="w-3.5 h-3.5 mr-1" />
+                        {isAIProcessing ? 'Scraping with AI...' : 'Auto-Fill with AI'}
+                    </button>
+                </div>
+                <input
+                    id="sourceUrl"
+                    type="text"
+                    name="sourceUrl"
+                    value={formData.sourceUrl}
+                    onChange={handleChange}
+                    placeholder="e.g., https://example.com/video"
+                    required
+                    className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors placeholder:text-zinc-600"
+                />
+            </div>
+
             <FormInput label="Thumbnail URL" name="thumbnailUrl" value={formData.thumbnailUrl} onChange={handleChange} placeholder="e.g., https://example.com/image.jpg" required /> 
             <FormSelect label="Media Type" name="mediaType" value={formData.mediaType} onChange={handleChange}>
                 <option value="video">Video File</option>

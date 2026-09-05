@@ -139,7 +139,13 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
                         <button 
                             type="button"
                             aria-label="Play content"
-                            onClick={() => setIsPlaying(true)}
+                            onClick={() => {
+                                if (media.sourceUrl && (media.sourceUrl.startsWith('http://') || media.sourceUrl.startsWith('https://'))) {
+                                    window.open(media.sourceUrl, '_blank');
+                                } else {
+                                    setIsPlaying(true);
+                                }
+                            }}
                             className="w-20 h-20 bg-yellow-500/90 rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow-[0_0_30px_rgba(220,38,38,0.5)]"
                         >
                             <Play className="w-8 h-8 text-white ml-1 fill-current" />
@@ -206,10 +212,10 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
                     <button 
                         type="button"
                         onClick={() => handleRate('dislike')}
-                        className={`px-4 py-2 hover:bg-zinc-800 transition-colors ${isDisliked ? 'text-white' : 'text-zinc-300'}`}
+                        className={`flex items-center space-x-2 px-4 py-2 hover:bg-zinc-800 transition-colors ${isDisliked ? 'text-yellow-400' : 'text-zinc-300'}`}
                     >
                         <ThumbsDown className={`w-5 h-5 ${isDisliked ? 'fill-current' : ''}`} />
-                        <span className="text-sm font-medium ml-2">{media.dislikes?.length || 0}</span>
+                        <span className="text-sm font-medium">{media.dislikes?.length || 0}</span>
                     </button>
                 </div>
                 <button type="button" className="flex items-center space-x-2 px-4 py-2 bg-[#111] rounded-full text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors border border-zinc-800">
@@ -277,7 +283,13 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
                 <div 
                     key={video.id} 
                     className="flex space-x-3 group cursor-pointer"
-                    onClick={() => onRelatedClick(video.id)}
+                    onClick={() => {
+                        if (video.sourceUrl && (video.sourceUrl.startsWith('http://') || video.sourceUrl.startsWith('https://'))) {
+                            window.open(video.sourceUrl, '_blank');
+                        } else {
+                            onRelatedClick(video.id);
+                        }
+                    }}
                 >
                     <div className="relative w-40 h-24 flex-shrink-0 rounded-lg overflow-hidden border border-zinc-800">
                         <img 

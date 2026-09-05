@@ -43,6 +43,15 @@ export const api = {
   },
   
   media: {
+    scrapeMetadata: async (url: string): Promise<{ title: string; description: string; tags: string[] }> => {
+      const res = await fetch('/api/scrape-metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      if (!res.ok) throw new Error('Scrape failed');
+      return res.json();
+    },
     uploadFile: async (file: File): Promise<string> => {
       const formData = new FormData();
       formData.append('file', file);

@@ -15,6 +15,7 @@ import { generateAvatar } from './services/store';
 import { api } from './services/api';
 
 import MessagesPage from './pages/Messages';
+import Footer from './components/Footer';
 
 const GUEST_USER: User = {
   id: 'guest',
@@ -184,6 +185,7 @@ const App: React.FC = () => {
                />
              )}
              {currentPage === 'admin-dashboard' && <AdminDashboard user={currentUser} />}
+             <Footer />
           </div>
         </main>
 

@@ -15,6 +15,7 @@ import { MongoClient, GridFSBucket, ObjectId } from "mongodb";
 import multer from "multer";
 import { Readable } from "stream";
 import dotenv from "dotenv";
+import { GoogleGenAI, Type } from "@google/genai";
 
 dotenv.config();
 
@@ -112,6 +113,140 @@ async function startServer() {
         console.error("Error writing data.json:", err);
         res.status(500).json({ error: "Failed to save data locally" });
       }
+    }
+  });
+
+  /**
+   * POST /api/scrape-metadata
+   * Scrapes external URL metadata and uses Gemini to auto-generate tube tags and description.
+   */
+  app.post("/api/scrape-metadata", async (req: any, res: any) => {
+    const { url } = req.body;
+    if (!url) {
+      return res.status(400).json({ error: "URL is required" });
+    }
+
+    console.log(`[Scrape] Attempting to scrape external link: ${url}`);
+    let scrapedTitle = "";
+    let scrapedDesc = "";
+    let scrapedKeywords = "";
+    let bodyText = "";
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.5",
+        },
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      const html = await response.text();
+
+      // Extract Title
+      const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+      scrapedTitle = titleMatch ? titleMatch[1].trim() : "";
+
+      // Extract Meta Description and Keywords using standard Regex patterns
+      const descMatch = html.match(/<meta\s+[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i) || 
+                         html.match(/<meta\s+[^>]*content=["']([^"']+)["'][^>]*name=["']description["']/i) ||
+                         html.match(/<meta\s+[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i);
+      scrapedDesc = descMatch ? descMatch[1].trim() : "";
+
+      const keywordsMatch = html.match(/<meta\s+[^>]*name=["']keywords["'][^>]*content=["']([^"']+)["']/i) ||
+                            html.match(/<meta\s+[^>]*content=["']([^"']+)["'][^>]*name=["']keywords["']/i);
+      scrapedKeywords = keywordsMatch ? keywordsMatch[1].trim() : "";
+
+      // Extract raw snippet from body content to provide additional context
+      bodyText = html
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+        .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .substring(0, 5000)
+        .trim();
+        
+      console.log(`[Scrape] Fetched HTML. Title: "${scrapedTitle}", MetaDesc: "${scrapedDesc.substring(0, 50)}..."`);
+    } catch (err: any) {
+      console.warn(`[Scrape] Direct scraping failed (might be CORS or blocker): ${err.message}. Relying on URL breakdown for AI generation.`);
+    }
+
+    // Try to query Gemini API
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    if (!geminiApiKey) {
+      console.warn("[Scrape] GEMINI_API_KEY is not defined in environment variables. Returning fallback metadata.");
+      // Fallback if no Gemini key is provided
+      const finalTitle = scrapedTitle || url.split("/").pop()?.replace(/[-_]/g, " ") || "New Tube Release";
+      return res.json({
+        title: finalTitle,
+        description: scrapedDesc || "Exclusive video content from Elysian creators.",
+        tags: scrapedKeywords ? scrapedKeywords.split(",").map(k => k.trim()) : ["Exclusive", "Recommended", "Tube", "HD"]
+      });
+    }
+
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: geminiApiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          }
+        }
+      });
+
+      const prompt = `You are an advanced adult/tube media classifier and SEO optimizer. 
+I have scraped data from an external media link: "${url}".
+
+Extracted metadata from the link:
+- Title: "${scrapedTitle || "Unknown"}"
+- Description: "${scrapedDesc || "Unknown"}"
+- Keywords: "${scrapedKeywords || "Unknown"}"
+- Webpage snippet text: "${bodyText.substring(0, 2000) || "Unavailable"}"
+
+Your task is to analyze the metadata and URL details above to generate a highly engaging, professional adult-tube optimized Title, an exciting and rich content Description, and exactly 5 to 8 tags/categories (e.g. "Exclusive", "Brunette", "POV", "Amateur", "HD", "South African").
+Return a clean JSON conforming to the response schema. Keep descriptions descriptive and enticing.`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.8-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              title: { type: Type.STRING },
+              description: { type: Type.STRING },
+              tags: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING }
+              }
+            },
+            required: ["title", "description", "tags"]
+          }
+        }
+      });
+
+      const resultText = response.text?.trim();
+      if (resultText) {
+        const parsed = JSON.parse(resultText);
+        console.log("[Scrape] Gemini metadata generation succeeded!");
+        return res.json(parsed);
+      } else {
+        throw new Error("Empty response from Gemini API");
+      }
+    } catch (apiErr: any) {
+      console.error("[Scrape] Error calling Gemini API:", apiErr);
+      const fallbackTitle = scrapedTitle || "New Tube Release";
+      return res.json({
+        title: fallbackTitle,
+        description: scrapedDesc || "An exciting new release uploaded on Elysian.",
+        tags: ["Exclusive", "Recommended", "Tube", "HD"]
+      });
     }
   });
 

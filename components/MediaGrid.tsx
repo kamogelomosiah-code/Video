@@ -5,11 +5,14 @@ import { Play, Lock, Clock } from 'lucide-react';
 interface MediaGridProps {
   items: MediaItem[];
   onItemClick: (id: string) => void;
+  showPremiumBadge?: boolean;
 }
 
-const MediaGrid: React.FC<MediaGridProps> = ({ items, onItemClick }) => {
+const MediaGrid: React.FC<MediaGridProps> = ({ items, onItemClick, showPremiumBadge = false }) => {
   const handleClick = (item: MediaItem) => {
-    if (item.redirectUrl) {
+    if (item.sourceUrl && (item.sourceUrl.startsWith('http://') || item.sourceUrl.startsWith('https://'))) {
+      window.open(item.sourceUrl, '_blank');
+    } else if (item.redirectUrl) {
       window.open(item.redirectUrl, '_blank');
     } else {
       onItemClick(item.id);
@@ -36,7 +39,7 @@ const MediaGrid: React.FC<MediaGridProps> = ({ items, onItemClick }) => {
             
             {/* Premium Lock or Duration */}
             <div className="absolute top-1 right-1 sm:top-3 sm:right-3 flex items-center space-x-1 sm:space-x-2">
-              {item.isPremium && (
+              {showPremiumBadge && item.isPremium && (
                 <div className="bg-amber-500/20 backdrop-blur-md border border-amber-500/50 text-amber-500 px-1 sm:px-2 py-0.5 sm:py-1 rounded-md text-[9px] sm:text-xs font-bold uppercase tracking-wider flex items-center">
                   <Lock className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
                   Premium

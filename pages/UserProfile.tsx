@@ -277,13 +277,13 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, currentUser, onMediaC
 
                       {userVideos.length > 0 ? (
                           <div className="space-y-8">
-                              <MediaGrid items={visibleContent} onItemClick={onMediaClick} />
+                              <MediaGrid items={visibleContent} onItemClick={onMediaClick} showPremiumBadge={true} />
                               
                               {/* Locked Content Blur Overlay */}
                               {hiddenContent.length > 0 && (
                                   <div className="relative pb-12">
                                       <div className="filter blur-xl grayscale opacity-50 pointer-events-none scale-95 transition-all select-none">
-                                          <MediaGrid items={hiddenContent} onItemClick={() => {}} />
+                                          <MediaGrid items={hiddenContent} onItemClick={() => {}} showPremiumBadge={true} />
                                       </div>
                                       <div className="absolute inset-0 bg-black/60 backdrop-blur-md flex flex-col items-center justify-center text-center p-4 rounded-3xl border border-yellow-500/20 shadow-2xl">
                                           <div className="w-16 h-16 sm:w-20 sm:h-20 bg-yellow-500/10 rounded-full flex items-center justify-center mb-4 sm:mb-6 border border-yellow-500/30 shadow-[0_0_30px_rgba(220,38,38,0.2)]">
