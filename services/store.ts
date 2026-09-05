@@ -54,8 +54,8 @@ const SEED_MEDIA: MediaItem[] = Array.from({ length: 12 }).map((_, i) => ({
   mediaType: 'video',
   duration: `${Math.floor(Math.random() * 40) + 5}:${Math.floor(Math.random() * 59).toString().padStart(2, '0')}`,
   views: Math.floor(Math.random() * 150000) + 5000,
-  creatorName: [`Candy V.`, `Roxy Red`, `Mistress J`, `David L.`, `Velvet Rooms`, `ArtHouse XXX`, `VogueCam`, `IndieLens`][i % 8],
-  creatorAvatar: generateAvatar([`Candy V.`, `Roxy Red`, `Mistress J`, `David L.`, `Velvet Rooms`, `ArtHouse XXX`, `VogueCam`, `IndieLens`][i % 8]),
+  creatorName: 'Elysian',
+  creatorAvatar: generateAvatar('Elysian'),
   tags: ['Glamour', 'Uncensored', '4K', 'SouthAfrican', 'Verified'],
   isPremium: Math.random() > 0.4,
   uploadedAt: `${Math.floor(Math.random() * 10) + 1} days ago`,
@@ -276,8 +276,15 @@ class StoreService {
   }
 
   // --- Media ---
-  getMedia = (): MediaItem[] => [...this.media].sort((a, b) => new Date(b.uploadedAt === 'Just now' ? Date.now() : 0).getTime() - new Date(a.uploadedAt === 'Just now' ? Date.now() : 0).getTime());
-  getMediaById = (id: string): MediaItem | undefined => this.media.find(m => m.id === id);
+  getMedia = (): MediaItem[] => [...this.media]
+    .map(m => m.userId === 'admin-user' ? { ...m, creatorName: 'Elysian', creatorAvatar: generateAvatar('Elysian') } : m)
+    .sort((a, b) => new Date(b.uploadedAt === 'Just now' ? Date.now() : 0).getTime() - new Date(a.uploadedAt === 'Just now' ? Date.now() : 0).getTime());
+    
+  getMediaById = (id: string): MediaItem | undefined => {
+    const m = this.media.find(item => item.id === id);
+    if (!m) return undefined;
+    return m.userId === 'admin-user' ? { ...m, creatorName: 'Elysian', creatorAvatar: generateAvatar('Elysian') } : m;
+  };
   addMedia = (item: Omit<MediaItem, 'id' | 'views' | 'uploadedAt'>): MediaItem => {
     const newItem: MediaItem = { ...item, id: generateId(), views: 0, uploadedAt: 'Just now', likes: [], dislikes: [] };
     this.media.unshift(newItem);

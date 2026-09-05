@@ -232,29 +232,33 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
                 <div>
                     <h3 className="text-white font-bold flex items-center">
                         {media.creatorName}
-                        <CheckCircle2 className="w-4 h-4 text-zinc-400 ml-1.5" />
+                        {media.userId !== 'admin-user' && <CheckCircle2 className="w-4 h-4 text-zinc-400 ml-1.5" />}
                     </h3>
-                    <p className="text-xs text-zinc-400">850K subscribers</p>
+                    <p className="text-xs text-zinc-400">
+                        {media.userId === 'admin-user' ? 'Official Platform Host' : '850K subscribers'}
+                    </p>
                 </div>
             </div>
-            <button 
-                type="button"
-                onClick={() => setIsSubscribed(!isSubscribed)}
-                className={`flex items-center justify-center space-x-2 px-6 py-2.5 rounded-full font-semibold transition-all w-full sm:w-auto ${
-                    isSubscribed 
-                    ? 'bg-[#111] text-zinc-300 border border-zinc-800 hover:bg-zinc-800' 
-                    : 'bg-white text-zinc-900 hover:bg-zinc-100 hover:text-yellow-500'
-                }`}
-            >
-                {isSubscribed ? (
-                    <>
-                        <Bell className="w-4 h-4" />
-                        <span>Subscribed</span>
-                    </>
-                ) : (
-                    <span>Subscribe</span>
-                )}
-            </button>
+            {media.userId !== 'admin-user' && (
+              <button 
+                  type="button"
+                  onClick={() => setIsSubscribed(!isSubscribed)}
+                  className={`flex items-center justify-center space-x-2 px-6 py-2.5 rounded-full font-semibold transition-all w-full sm:w-auto ${
+                      isSubscribed 
+                      ? 'bg-[#111] text-zinc-300 border border-zinc-800 hover:bg-zinc-800' 
+                      : 'bg-white text-zinc-900 hover:bg-zinc-100 hover:text-yellow-500'
+                  }`}
+              >
+                  {isSubscribed ? (
+                      <>
+                          <Bell className="w-4 h-4" />
+                          <span>Subscribed</span>
+                      </>
+                  ) : (
+                      <span>Subscribe</span>
+                  )}
+              </button>
+            )}
           </div>
 
           {/* Description */}
@@ -310,7 +314,9 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
                         <h4 className="text-sm font-semibold text-zinc-200 line-clamp-2 leading-snug group-hover:text-yellow-400 transition-colors">
                             {video.title}
                         </h4>
-                        <p className="text-xs text-zinc-400 mt-1">{video.creatorName}</p>
+                        {video.userId !== 'admin-user' && (
+                            <p className="text-xs text-zinc-400 mt-1">{video.creatorName}</p>
+                        )}
                         <div className="text-[10px] text-zinc-500 mt-auto flex items-center">
                             {video.views.toLocaleString()} views • {video.uploadedAt}
                         </div>

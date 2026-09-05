@@ -73,16 +73,18 @@ const MediaGrid: React.FC<MediaGridProps> = ({ items, onItemClick, showPremiumBa
               <span>{item.views.toLocaleString()} views</span>
             </div>
 
-            <div className="flex items-center pt-2 sm:pt-3 border-t border-zinc-800/50 mt-auto">
-              <img 
-                src={item.creatorAvatar} 
-                alt={item.creatorName} 
-                className="w-4 h-4 sm:w-6 sm:h-6 rounded-full object-cover mr-1.5 sm:mr-2"
-              />
-              <span className="text-[10px] sm:text-sm text-zinc-400 group-hover:text-zinc-200 transition-colors truncate">
-                {item.creatorName}
-              </span>
-            </div>
+            {item.userId !== 'admin-user' && (
+              <div className="flex items-center pt-2 sm:pt-3 border-t border-zinc-800/50 mt-auto">
+                <img 
+                  src={item.creatorAvatar} 
+                  alt={item.creatorName} 
+                  className="w-4 h-4 sm:w-6 sm:h-6 rounded-full object-cover mr-1.5 sm:mr-2"
+                />
+                <span className="text-[10px] sm:text-sm text-zinc-400 group-hover:text-zinc-200 transition-colors truncate">
+                  {item.creatorName}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       ))}
