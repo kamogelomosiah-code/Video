@@ -43,6 +43,7 @@ export interface MediaItem {
   isPremium: boolean;
   uploadedAt: string;
   price?: number;
+  redirectUrl?: string;
 }
 
 export interface TalentProfile {

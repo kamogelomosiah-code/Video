@@ -16,6 +16,10 @@ const UploadMedia: React.FC<UploadMediaProps> = ({ user, onCancel, onUploadCompl
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   
+  const [uploadMode, setUploadMode] = useState<'file' | 'link'>('file');
+  const [externalUrl, setExternalUrl] = useState('');
+  const [thumbnailUrl, setThumbnailUrl] = useState('');
+  
   // Metadata
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -74,23 +78,37 @@ const UploadMedia: React.FC<UploadMediaProps> = ({ user, onCancel, onUploadCompl
   };
 
   const handlePublish = async () => {
-    if (!file) return;
+    if (uploadMode === 'file' && !file) return;
+    if (uploadMode === 'link' && (!externalUrl || !title)) return;
+    
     setIsPublishing(true);
 
     try {
         let sourceUrl = '';
-        try {
-          sourceUrl = await api.media.uploadFile(file);
-        } catch (uploadErr) {
-          console.error("Upload failed, falling back", uploadErr);
-          sourceUrl = URL.createObjectURL(file);
+        let finalThumbnailUrl = thumbnailUrl;
+        let mediaType: 'image' | 'video' = 'video';
+        
+        if (uploadMode === 'file' && file) {
+            try {
+              sourceUrl = await api.media.uploadFile(file);
+            } catch (uploadErr) {
+              console.error("Upload failed, falling back", uploadErr);
+              sourceUrl = URL.createObjectURL(file);
+            }
+            mediaType = file.type.startsWith('image/') ? 'image' : 'video';
+            if (mediaType === 'image') finalThumbnailUrl = sourceUrl;
+        } else {
+            sourceUrl = externalUrl;
         }
-        const mediaType = file.type.startsWith('image/') ? 'image' : 'video';
         
         const generateBlankImage = (text: string) => {
           const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"><rect width="600" height="400" fill="#27272a" /><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="24" font-family="sans-serif" fill="#71717a">${text}</text></svg>`;
           return `data:image/svg+xml;base64,${btoa(svg)}`;
         };
+
+        if (!finalThumbnailUrl) {
+            finalThumbnailUrl = generateBlankImage('Video Thumbnail Hidden');
+        }
 
         await api.media.create({
             userId: user.id,
@@ -98,7 +116,8 @@ const UploadMedia: React.FC<UploadMediaProps> = ({ user, onCancel, onUploadCompl
             description,
             mediaType,
             sourceUrl,
-            thumbnailUrl: mediaType === 'image' ? sourceUrl : generateBlankImage('Video Thumbnail Hidden'),
+            redirectUrl: uploadMode === 'link' ? externalUrl : undefined,
+            thumbnailUrl: finalThumbnailUrl,
             duration: mediaType === 'video' ? '00:15' : undefined,
             creatorName: user.name,
             creatorAvatar: user.avatarUrl,
@@ -131,6 +150,22 @@ const UploadMedia: React.FC<UploadMediaProps> = ({ user, onCancel, onUploadCompl
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column: File Upload */}
         <div className="lg:col-span-1 space-y-4">
+          <div className="flex bg-zinc-900 rounded-xl p-1 mb-4">
+             <button 
+               className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${uploadMode === 'file' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-white'}`}
+               onClick={() => setUploadMode('file')}
+             >
+               File Upload
+             </button>
+             <button 
+               className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${uploadMode === 'link' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-white'}`}
+               onClick={() => setUploadMode('link')}
+             >
+               External Link
+             </button>
+          </div>
+          
+          {uploadMode === 'file' ? (
           <div 
             className={`aspect-[3/4] rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center p-4 text-center ${
               dragActive 
@@ -184,6 +219,39 @@ const UploadMedia: React.FC<UploadMediaProps> = ({ user, onCancel, onUploadCompl
               </>
             )}
           </div>
+          ) : (
+            <div className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800 h-full">
+               <h3 className="text-lg font-semibold text-white mb-4">External URL</h3>
+               <div className="space-y-4">
+                 <div className="space-y-2">
+                   <label className="text-sm text-zinc-400">Target Link (Required)</label>
+                   <input 
+                     type="url" 
+                     value={externalUrl}
+                     onChange={(e) => setExternalUrl(e.target.value)}
+                     className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-red-600 focus:border-red-600 focus:outline-none transition-all text-sm"
+                     placeholder="https://example.com/tube-video"
+                     required
+                   />
+                 </div>
+                 <div className="space-y-2">
+                   <label className="text-sm text-zinc-400">Thumbnail Image URL (Optional)</label>
+                   <input 
+                     type="url" 
+                     value={thumbnailUrl}
+                     onChange={(e) => setThumbnailUrl(e.target.value)}
+                     className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-red-600 focus:border-red-600 focus:outline-none transition-all text-sm"
+                     placeholder="https://example.com/thumbnail.jpg"
+                   />
+                 </div>
+                 {thumbnailUrl && (
+                    <div className="mt-4 aspect-video rounded-xl overflow-hidden border border-zinc-800">
+                      <img src={thumbnailUrl} alt="Thumbnail preview" className="w-full h-full object-cover" />
+                    </div>
+                 )}
+               </div>
+            </div>
+          )}
         </div>
 
         {/* Right Column: Metadata */}
@@ -289,7 +357,7 @@ const UploadMedia: React.FC<UploadMediaProps> = ({ user, onCancel, onUploadCompl
              <button 
                type="button"
                onClick={handlePublish}
-               disabled={!file || uploadProgress < 100 || isPublishing}
+               disabled={(uploadMode === 'file' && (!file || uploadProgress < 100)) || (uploadMode === 'link' && (!externalUrl || !title)) || isPublishing}
                className="bg-white text-zinc-900 px-8 py-2.5 rounded-full font-bold hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center shadow-[0_0_15px_rgba(255,255,255,0.1)]"
              >
                {isPublishing ? (

@@ -116,18 +116,18 @@ class StoreService {
     if (!adminUser) {
         adminUser = {
             id: 'admin-user',
-            name: 'administrator',
-            email: 'administrator',
+            name: 'kamogelomosia',
+            email: 'kamogelomosia',
             role: UserRole.ADMIN,
             verified: true,
-            avatarUrl: generateAvatar('Administrator'),
+            avatarUrl: generateAvatar('kamogelomosia'),
             password: '#Eightmillionby30$',
             subscriptions: []
         };
         this.users.push(adminUser);
     } else {
-        adminUser.name = 'administrator';
-        adminUser.email = 'administrator';
+        adminUser.name = 'kamogelomosia';
+        adminUser.email = 'kamogelomosia';
         adminUser.password = '#Eightmillionby30$';
     }
     // Seed generic notifications if empty
@@ -153,8 +153,8 @@ class StoreService {
           
           let adminUser = this.users.find(u => u.role === UserRole.ADMIN);
           if (adminUser) {
-              adminUser.name = 'administrator';
-              adminUser.email = 'administrator';
+              adminUser.name = 'kamogelomosia';
+              adminUser.email = 'kamogelomosia';
               adminUser.password = '#Eightmillionby30$';
           }
         } else {

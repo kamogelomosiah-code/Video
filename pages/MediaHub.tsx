@@ -59,6 +59,15 @@ const MediaHub: React.FC<MediaHubProps> = ({ onMediaClick }) => {
       thumbnailUrl: generateBlankImage('Featured Image Hidden')
   };
 
+  const handleHeroClick = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (heroItem.redirectUrl) {
+      window.open(heroItem.redirectUrl, '_blank');
+    } else {
+      onMediaClick(heroItem.id);
+    }
+  };
+
   if (isLoading) {
       return <div className="flex h-96 items-center justify-center text-zinc-500">Loading content...</div>;
   }
@@ -85,7 +94,7 @@ const MediaHub: React.FC<MediaHubProps> = ({ onMediaClick }) => {
       </div>
 
       {/* Hero Section */}
-      <div className="relative rounded-2xl md:rounded-3xl overflow-hidden h-96 md:h-[450px] border border-zinc-800 shadow-2xl group cursor-pointer active:scale-[0.99] transition-transform" onClick={() => onMediaClick(heroItem.id)}>
+      <div className="relative rounded-2xl md:rounded-3xl overflow-hidden h-96 md:h-[450px] border border-zinc-800 shadow-2xl group cursor-pointer active:scale-[0.99] transition-transform" onClick={() => handleHeroClick()}>
         <img 
           src={heroItem.thumbnailUrl} 
           alt="Featured" 
@@ -105,7 +114,7 @@ const MediaHub: React.FC<MediaHubProps> = ({ onMediaClick }) => {
           </p>
           <div className="flex flex-row items-center gap-3">
             <button 
-              onClick={(e) => { e.stopPropagation(); onMediaClick(heroItem.id); }}
+              onClick={handleHeroClick}
               className="bg-white text-zinc-900 px-6 md:px-8 py-3 md:py-4 rounded-full font-bold hover:bg-zinc-100 active:scale-95 transition-all flex items-center justify-center shadow-xl text-sm md:text-base flex-1 sm:flex-initial"
             >
               <Play className="w-4 h-4 md:w-5 md:h-5 mr-2 fill-current" />
