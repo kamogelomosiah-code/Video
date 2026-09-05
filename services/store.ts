@@ -135,7 +135,7 @@ class StoreService {
     if (this.notifications.length === 0) {
         this.seedNotifications();
     }
-    this.saveToStorage();
+    this.saveToLocalStorageOnly();
   }
 
   async initFromServer() {
@@ -159,6 +159,7 @@ class StoreService {
               adminUser.email = 'kamogelomosia';
               adminUser.password = '#Eightmillionby30$';
           }
+          this.saveToLocalStorageOnly();
         } else {
           // If server is empty, initialize it with seeded data
           this.saveToStorage();
@@ -166,6 +167,20 @@ class StoreService {
       }
     } catch (e) {
       console.warn("Failed to init from server", e);
+    }
+  }
+
+  private saveToLocalStorageOnly() {
+    try {
+      localStorage.setItem('ac_media', JSON.stringify(this.media));
+      localStorage.setItem('ac_users', JSON.stringify(this.users));
+      localStorage.setItem('ac_comments', JSON.stringify(this.comments));
+      localStorage.setItem('ac_notifications', JSON.stringify(this.notifications));
+      localStorage.setItem('ac_talent', JSON.stringify(this.talentProfiles));
+      localStorage.setItem('ac_activityLogs', JSON.stringify(this.activityLogs));
+      localStorage.setItem('ac_settings', JSON.stringify(this.siteSettings));
+    } catch (e) {
+      console.error("Failed to save locally", e);
     }
   }
 

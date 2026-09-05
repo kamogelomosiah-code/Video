@@ -347,16 +347,21 @@ const MediaTable = ({ media, onEdit, onDelete }: any) => (
     {/* Mobile View */}
     <div className="md:hidden space-y-4 p-4">
         {media.map((item: MediaItem) => (
-            <div key={item.id} className="bg-black/50 rounded-lg p-4 border border-zinc-800 flex items-start space-x-4">
-                <img src={item.thumbnailUrl} className="w-20 h-20 object-cover rounded-md flex-shrink-0"/>
-                <div className="flex-1 min-w-0">
-                    <p className="font-bold text-white mb-1 truncate">{item.title}</p>
-                    <p className="text-xs text-zinc-400 mb-2 truncate">by {item.creatorName}</p>
-                    {item.isPremium 
-                        ? <span className="px-2 py-1 text-xs font-medium rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">Premium</span> 
-                        : <span className="px-2 py-1 text-xs font-medium rounded-full bg-zinc-700 text-zinc-300">Free</span>}
+            <div key={item.id} className="bg-black/50 rounded-xl p-4 border border-zinc-800/80 flex flex-col space-y-3">
+                <div className="flex items-start space-x-3">
+                    <img src={item.thumbnailUrl} className="w-20 h-20 object-cover rounded-md flex-shrink-0 border border-zinc-800"/>
+                    <div className="flex-1 min-w-0">
+                        <p className="font-bold text-white mb-1 text-sm leading-snug break-words">{item.title}</p>
+                        <p className="text-xs text-zinc-400 mb-2 truncate">by {item.creatorName}</p>
+                        {item.isPremium 
+                            ? <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">Premium</span> 
+                            : <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-zinc-700 text-zinc-300">Free</span>}
+                    </div>
                 </div>
-                {renderActions(() => onEdit(item), () => onDelete(item.id), 'media', item.title)}
+                <div className="border-t border-zinc-900/60 pt-2 flex justify-end space-x-2">
+                    <button type="button" onClick={() => onEdit(item)} className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg text-xs font-semibold flex items-center transition-all"><Edit className="w-3.5 h-3.5 mr-1 text-zinc-400"/> Edit</button>
+                    <button type="button" onClick={() => onDelete(item.id)} className="px-3 py-1.5 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 rounded-lg text-xs font-semibold flex items-center transition-all"><Trash2 className="w-3.5 h-3.5 mr-1"/> Delete</button>
+                </div>
             </div>
         ))}
     </div>
@@ -401,16 +406,21 @@ const UserTable = ({ users, onEdit, onDelete }: any) => (
     {/* Mobile View */}
     <div className="md:hidden space-y-4 p-4">
         {users.map((user: User) => (
-            <div key={user.id} className="bg-black/50 rounded-lg p-4 border border-zinc-800 flex items-center space-x-4">
-                <img src={user.avatarUrl} className="w-12 h-12 rounded-full"/>
-                <div className="flex-1 min-w-0">
-                    <p className="font-bold text-white truncate">{user.name}</p>
-                    <p className="text-xs text-zinc-400">{user.role}</p>
-                    {user.verified 
-                        ? <span className="mt-2 px-2 py-1 text-xs font-medium rounded-full bg-green-500/10 text-green-500 border border-green-500/20 inline-block">Verified</span> 
-                        : <span className="mt-2 px-2 py-1 text-xs font-medium rounded-full bg-zinc-700 text-zinc-300 inline-block">Unverified</span>}
+            <div key={user.id} className="bg-black/50 rounded-xl p-4 border border-zinc-800/80 flex flex-col space-y-3">
+                <div className="flex items-center space-x-3">
+                    <img src={user.avatarUrl} className="w-12 h-12 rounded-full border border-zinc-800 flex-shrink-0"/>
+                    <div className="flex-1 min-w-0">
+                        <p className="font-bold text-white text-sm truncate">{user.name}</p>
+                        <p className="text-xs text-zinc-400 mb-1">{user.role}</p>
+                        {user.verified 
+                            ? <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-green-500/10 text-green-500 border border-green-500/20 inline-block">Verified</span> 
+                            : <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-zinc-700 text-zinc-300 inline-block">Unverified</span>}
+                    </div>
                 </div>
-                {renderActions(() => onEdit(user), () => onDelete(user.id), 'user', user.name)}
+                <div className="border-t border-zinc-900/60 pt-2 flex justify-end space-x-2">
+                    <button type="button" onClick={() => onEdit(user)} className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg text-xs font-semibold flex items-center transition-all"><Edit className="w-3.5 h-3.5 mr-1 text-zinc-400"/> Edit</button>
+                    <button type="button" onClick={() => onDelete(user.id)} className="px-3 py-1.5 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 rounded-lg text-xs font-semibold flex items-center transition-all"><Trash2 className="w-3.5 h-3.5 mr-1"/> Delete</button>
+                </div>
             </div>
         ))}
     </div>
@@ -450,15 +460,20 @@ const TalentTable = ({ talent, onEdit, onDelete }: any) => (
     </table>
     <div className="md:hidden space-y-4 p-4">
         {talent.map((t: TalentProfile) => (
-            <div key={t.id} className="bg-black/50 rounded-lg p-4 border border-zinc-800 flex items-center space-x-4">
-                <img src={t.imageUrl} className="w-12 h-12 rounded-full"/>
-                <div className="flex-1 min-w-0">
-                    <p className="font-bold text-white truncate">{t.name}</p>
-                    <p className="text-xs text-zinc-400 flex items-center mt-1 truncate">
-                        <MapPin className="w-3 h-3 mr-1 flex-shrink-0"/>{t.location}
-                    </p>
+            <div key={t.id} className="bg-black/50 rounded-xl p-4 border border-zinc-800/80 flex flex-col space-y-3">
+                <div className="flex items-center space-x-3">
+                    <img src={t.imageUrl} className="w-12 h-12 rounded-full border border-zinc-800 flex-shrink-0"/>
+                    <div className="flex-1 min-w-0">
+                        <p className="font-bold text-white text-sm truncate">{t.name}</p>
+                        <p className="text-xs text-zinc-400 flex items-center mt-0.5 truncate">
+                            <MapPin className="w-3 h-3 mr-1 flex-shrink-0 text-zinc-500"/>{t.location}
+                        </p>
+                    </div>
                 </div>
-                {renderActions(() => onEdit(t), () => onDelete(t.id), 'talent', t.name)}
+                <div className="border-t border-zinc-900/60 pt-2 flex justify-end space-x-2">
+                    <button type="button" onClick={() => onEdit(t)} className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg text-xs font-semibold flex items-center transition-all"><Edit className="w-3.5 h-3.5 mr-1 text-zinc-400"/> Edit</button>
+                    <button type="button" onClick={() => onDelete(t.id)} className="px-3 py-1.5 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 rounded-lg text-xs font-semibold flex items-center transition-all"><Trash2 className="w-3.5 h-3.5 mr-1"/> Delete</button>
+                </div>
             </div>
         ))}
     </div>

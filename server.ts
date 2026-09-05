@@ -1,3 +1,12 @@
+/**
+ * server.ts
+ * 
+ * Elysian Full-Stack Express Server.
+ * Configures connection to MongoDB with fallback local JSON persistence,
+ * exposes APIs for content state sync and GridFS file uploads, and
+ * integrates Vite middleware in development or static asset serving in production.
+ */
+
 import express from "express";
 import path from "path";
 import fs from "fs";
@@ -9,22 +18,27 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+// Fallback JSON file path when MongoDB is not connected/available
 const DATA_FILE = path.join(process.cwd(), "data.json");
 
 let db: any;
 let bucket: any;
 
+/**
+ * Initializes and starts the Express web server.
+ */
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // MongoDB Connection
+  // MongoDB Connection Setup
   const uri = process.env.MONGODB_URI;
   if (uri) {
     try {
       const client = new MongoClient(uri);
       await client.connect();
       db = client.db();
+      // Initialize GridFS bucket for media/file storage inside MongoDB
       bucket = new GridFSBucket(db, { bucketName: 'uploads' });
       console.log("Connected to MongoDB successfully");
     } catch (err) {
@@ -34,16 +48,23 @@ async function startServer() {
     console.warn("MONGODB_URI not found. Please add it to your platform secrets. Falling back to local data.json & memory storage.");
   }
 
-  // Middleware
+  // Middleware to parse JSON payloads with custom 50mb body limit for raw assets
   app.use(express.json({ limit: "50mb" }));
 
+  // Multer in-memory storage configuration for handling file uploads
   const upload = multer({ storage: multer.memoryStorage() });
 
-  // API Routes
+  // --- API Routes ---
+
+  // Healthcheck endpoint for containers and platform ingress
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
   });
 
+  /**
+   * GET /api/data
+   * Retrieves the global application state from MongoDB or falls back to data.json.
+   */
   app.get("/api/data", async (req, res) => {
     if (db) {
       try {
@@ -66,6 +87,10 @@ async function startServer() {
     }
   });
 
+  /**
+   * POST /api/data
+   * Saves the entire state object into MongoDB or local storage.
+   */
   app.post("/api/data", async (req, res) => {
     if (db) {
       try {
@@ -90,6 +115,10 @@ async function startServer() {
     }
   });
 
+  /**
+   * POST /api/upload
+   * Receives binary files, pipes them into GridFS on MongoDB or returns Base64 fallback.
+   */
   app.post("/api/upload", upload.single("file"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
@@ -119,6 +148,10 @@ async function startServer() {
     }
   });
 
+  /**
+   * GET /api/files/:id
+   * Streams a stored GridFS media file by its unique MongoDB ObjectId.
+   */
   app.get("/api/files/:id", async (req, res) => {
     if (!bucket) return res.status(404).send("MongoDB not configured");
     try {
@@ -131,7 +164,9 @@ async function startServer() {
     }
   });
 
-  // Vite middleware for development
+  // --- Front-end Integration / Asset Serving ---
+  // If we are in development, integrate Vite middlewares to hot reload code changes.
+  // In production, we serve static compiled files directly from the `/dist` directory.
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
