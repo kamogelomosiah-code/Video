@@ -72,7 +72,13 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, onBack }) => {
               className={`p-4 border-b border-zinc-900/50 cursor-pointer hover:bg-[#111] transition-colors flex items-center ${selectedTalent?.id === talent.id ? 'bg-[#111]' : ''}`}
             >
               <div className="relative">
-                <img src={talent.imageUrl} alt={talent.name} className="w-12 h-12 rounded-full object-cover border border-zinc-800" />
+                {talent.imageUrl ? (
+                  <img src={talent.imageUrl} alt={talent.name} className="w-12 h-12 rounded-full object-cover border border-zinc-800" />
+                ) : (
+                  <div className="w-12 h-12 rounded-full border border-zinc-800 bg-zinc-800 text-yellow-500 font-bold flex items-center justify-center text-sm">
+                    {(talent.name || "T").charAt(0).toUpperCase()}
+                  </div>
+                )}
                 {talent.online && <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-zinc-900"></div>}
               </div>
               <div className="ml-4">
@@ -91,7 +97,13 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, onBack }) => {
             <button className="md:hidden mr-4 text-zinc-400 hover:text-white" onClick={() => setSelectedTalent(null)}>
               <ArrowLeft className="w-6 h-6" />
             </button>
-            <img src={selectedTalent.imageUrl} alt={selectedTalent.name} className="w-10 h-10 rounded-full object-cover mr-3" />
+            {selectedTalent.imageUrl ? (
+              <img src={selectedTalent.imageUrl} alt={selectedTalent.name} className="w-10 h-10 rounded-full object-cover mr-3" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-zinc-800 text-yellow-500 font-bold flex items-center justify-center text-xs mr-3">
+                {(selectedTalent.name || "T").charAt(0).toUpperCase()}
+              </div>
+            )}
             <div>
               <p className="font-semibold text-white">{selectedTalent.name}</p>
               <p className="text-xs text-green-500">{selectedTalent.online ? 'Online' : 'Offline'}</p>

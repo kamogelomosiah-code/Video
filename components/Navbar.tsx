@@ -133,7 +133,13 @@ const Navbar: React.FC<NavbarProps> = ({
               ) : (
                 <div className="relative" ref={userMenuRef}>
                   <button type="button" onClick={() => setShowUserMenu(!showUserMenu)} className="relative group flex items-center space-x-2 focus:outline-none">
-                    <img src={user.avatarUrl} alt="User" className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 border-zinc-800 group-hover:border-yellow-500 object-cover transition-colors"/>
+                    {user.avatarUrl ? (
+                      <img src={user.avatarUrl} alt={user.name || "User"} className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 border-zinc-800 group-hover:border-yellow-500 object-cover transition-colors"/>
+                    ) : (
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 border-zinc-800 group-hover:border-yellow-500 bg-zinc-800 text-yellow-500 font-bold flex items-center justify-center text-xs transition-colors">
+                        {(user.name || "U").charAt(0).toUpperCase()}
+                      </div>
+                    )}
                     <div className="text-right hidden sm:block"><p className="text-sm font-medium text-white max-w-[100px] truncate">{user.name}</p><p className="text-xs text-zinc-500">{user.role}</p></div>
                   </button>
                   {showUserMenu && (

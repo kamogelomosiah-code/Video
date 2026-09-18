@@ -28,11 +28,17 @@ const MediaGrid: React.FC<MediaGridProps> = ({ items, onItemClick, showPremiumBa
           className="group relative bg-black rounded-xl sm:rounded-2xl overflow-hidden border border-zinc-900 hover:border-yellow-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-yellow-500/10 cursor-pointer flex flex-col"
         >
           <div className="relative aspect-video overflow-hidden">
-            <img 
-              src={item.thumbnailUrl} 
-              alt={item.title} 
-              className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
-            />
+            {item.thumbnailUrl ? (
+              <img 
+                src={item.thumbnailUrl} 
+                alt={item.title} 
+                className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+              />
+            ) : (
+              <div className="w-full h-full bg-zinc-900 flex items-center justify-center text-zinc-600 text-xs">
+                No Preview
+              </div>
+            )}
             
             {/* Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
@@ -75,11 +81,17 @@ const MediaGrid: React.FC<MediaGridProps> = ({ items, onItemClick, showPremiumBa
 
             {item.userId !== 'admin-user' && (
               <div className="flex items-center pt-2 sm:pt-3 border-t border-zinc-800/50 mt-auto">
-                <img 
-                  src={item.creatorAvatar} 
-                  alt={item.creatorName} 
-                  className="w-4 h-4 sm:w-6 sm:h-6 rounded-full object-cover mr-1.5 sm:mr-2"
-                />
+                {item.creatorAvatar ? (
+                  <img 
+                    src={item.creatorAvatar} 
+                    alt={item.creatorName || 'Creator'} 
+                    className="w-4 h-4 sm:w-6 sm:h-6 rounded-full object-cover mr-1.5 sm:mr-2"
+                  />
+                ) : (
+                  <div className="w-4 h-4 sm:w-6 sm:h-6 rounded-full bg-zinc-800 text-yellow-500 font-bold flex items-center justify-center text-[9px] mr-1.5 sm:mr-2 flex-shrink-0">
+                    {(item.creatorName || 'C').charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <span className="text-[10px] sm:text-sm text-zinc-400 group-hover:text-zinc-200 transition-colors truncate">
                   {item.creatorName}
                 </span>

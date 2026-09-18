@@ -177,7 +177,13 @@ const TalentDirectory: React.FC = () => {
         {filteredTalent.map((talent) => (
           <div key={talent.id} className="bg-black rounded-2xl border border-zinc-800 overflow-hidden hover:border-yellow-500/50 transition-all duration-300 group flex flex-col h-full hover:shadow-2xl hover:shadow-yellow-500/10">
             <div className="relative h-64 md:h-72">
-              <img src={talent.imageUrl} alt={talent.name} className="w-full h-full object-cover" />
+              {talent.imageUrl ? (
+                <img src={talent.imageUrl} alt={talent.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-zinc-900 flex items-center justify-center text-yellow-500 font-bold text-4xl">
+                  {(talent.name || "T").charAt(0).toUpperCase()}
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
               
               {talent.verified && (

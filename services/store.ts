@@ -229,10 +229,14 @@ class StoreService {
     localStorage.setItem('ac_activityLogs', JSON.stringify(dataToSave.activityLogs));
     localStorage.setItem('ac_settings', JSON.stringify(dataToSave.siteSettings));
 
+    const adminKey = (import.meta as any).env?.VITE_ADMIN_KEY || '';
     // Save to server asynchronously
     fetch('/api/data', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(adminKey ? { 'x-admin-key': adminKey } : {})
+      },
       body: JSON.stringify(dataToSave)
     }).catch(e => console.warn('Failed to save to server:', e));
   }

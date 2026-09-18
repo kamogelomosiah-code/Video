@@ -261,9 +261,9 @@ const UploadMedia: React.FC<UploadMediaProps> = ({ user, onCancel, onUploadCompl
                      placeholder="https://example.com/thumbnail.jpg"
                    />
                  </div>
-                 {thumbnailUrl && (
+                 {thumbnailUrl && thumbnailUrl.trim().length > 0 && (
                     <div className="mt-4 aspect-video rounded-xl overflow-hidden border border-zinc-800">
-                      <img src={thumbnailUrl} alt="Thumbnail preview" className="w-full h-full object-cover" />
+                      <img src={thumbnailUrl.trim()} alt="Thumbnail preview" className="w-full h-full object-cover" />
                     </div>
                  )}
                </div>

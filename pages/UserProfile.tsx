@@ -164,7 +164,9 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, currentUser, onMediaC
       
       {/* Cover Image */}
       <div className="h-48 sm:h-64 md:h-80 w-full relative bg-zinc-800 overflow-hidden">
-        <img src={coverImage} alt="Cover" className="w-full h-full object-cover opacity-60"/>
+        {coverImage ? (
+          <img src={coverImage} alt="Cover" className="w-full h-full object-cover opacity-60"/>
+        ) : null}
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent"></div>
         {isOwnProfile && (
           <button type="button" onClick={() => coverInputRef.current?.click()} aria-label="Change cover image" className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-md p-2 rounded-full text-white hover:bg-black/70 transition-all border border-white/10 z-20">
@@ -177,8 +179,14 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, currentUser, onMediaC
         {/* Profile Header */}
         <div className="flex flex-col md:flex-row items-start md:items-end -mt-16 md:-mt-20 mb-8 pb-8 border-b border-zinc-800">
           <div className="relative group flex-shrink-0">
-            <div className="w-28 h-28 md:w-40 md:h-40 rounded-full border-4 border-zinc-950 bg-[#111] overflow-hidden relative">
-              <img src={profileUser.avatarUrl} alt={profileUser.name} className="w-full h-full object-cover" />
+            <div className="w-28 h-28 md:w-40 md:h-40 rounded-full border-4 border-zinc-950 bg-[#111] overflow-hidden relative flex items-center justify-center">
+              {profileUser.avatarUrl ? (
+                <img src={profileUser.avatarUrl} alt={profileUser.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-zinc-800 text-yellow-500 font-bold flex items-center justify-center text-3xl md:text-5xl">
+                  {(profileUser.name || "U").charAt(0).toUpperCase()}
+                </div>
+              )}
             </div>
             {isOwnProfile && (
               <button type="button" aria-label="Edit profile picture" onClick={() => avatarInputRef.current?.click()} className="absolute bottom-2 right-2 bg-yellow-500 text-white p-2 rounded-full shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">

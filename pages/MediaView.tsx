@@ -125,16 +125,24 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
 
           {/* Video / Image Display */}
           {media.mediaType === 'image' ? (
-              <img src={media.sourceUrl || media.thumbnailUrl} alt={media.title} className="w-full h-full object-contain" />
+              (media.sourceUrl || media.thumbnailUrl) ? (
+                <img src={media.sourceUrl || media.thumbnailUrl} alt={media.title} className="w-full h-full object-contain" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-zinc-600">No Image Available</div>
+              )
           ) : (
             <>
                {!isPlaying ? (
                    <>
-                    <img 
-                        src={media.thumbnailUrl} 
-                        alt="Content" 
-                        className="w-full h-full object-cover opacity-80"
-                    />
+                    {media.thumbnailUrl ? (
+                      <img 
+                          src={media.thumbnailUrl} 
+                          alt="Content" 
+                          className="w-full h-full object-cover opacity-80"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-zinc-900 flex items-center justify-center text-zinc-600">No Preview Available</div>
+                    )}
                     <div className="absolute inset-0 flex items-center justify-center">
                         <button 
                             type="button"
@@ -154,11 +162,11 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
                    </>
                ) : (
                    <video 
-                     src={media.sourceUrl} 
+                     src={media.sourceUrl || undefined} 
                      controls 
                      autoPlay 
                      className="w-full h-full" 
-                     poster={media.thumbnailUrl}
+                     poster={media.thumbnailUrl || undefined}
                    >
                        Your browser does not support video playback.
                    </video>
@@ -228,7 +236,13 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
           {/* Creator Row */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between py-6 border-b border-zinc-900">
             <div className="flex items-center space-x-4">
-                <img src={media.creatorAvatar} alt="Creator" className="w-12 h-12 rounded-full border-2 border-zinc-800" />
+                {media.creatorAvatar ? (
+                  <img src={media.creatorAvatar} alt="Creator" className="w-12 h-12 rounded-full border-2 border-zinc-800 object-cover" />
+                ) : (
+                  <div className="w-12 h-12 rounded-full border-2 border-zinc-800 bg-zinc-800 text-yellow-500 font-bold flex items-center justify-center text-lg flex-shrink-0">
+                    {(media.creatorName || "C").charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div>
                     <h3 className="text-white font-bold flex items-center">
                         {media.creatorName}
@@ -296,11 +310,15 @@ const MediaView: React.FC<MediaViewProps> = ({ mediaId, currentUser, onBack, onR
                     }}
                 >
                     <div className="relative w-40 h-24 flex-shrink-0 rounded-lg overflow-hidden border border-zinc-800">
-                        <img 
-                            src={video.thumbnailUrl} 
-                            alt={video.title} 
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                        />
+                        {video.thumbnailUrl ? (
+                            <img 
+                                src={video.thumbnailUrl} 
+                                alt={video.title} 
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                            />
+                        ) : (
+                            <div className="w-full h-full bg-zinc-900 flex items-center justify-center text-zinc-600 text-xs">No media</div>
+                        )}
                         <div className="absolute bottom-1 right-1 bg-black/80 text-white text-[10px] px-1 rounded font-mono">
                             {video.duration || 'IMG'}
                         </div>

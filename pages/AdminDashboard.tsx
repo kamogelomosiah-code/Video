@@ -329,7 +329,13 @@ const MediaTable = ({ media, onEdit, onDelete }: any) => (
       <tbody>
           {media.map((item: MediaItem) => (
               <tr key={item.id} className="border-b border-zinc-800 hover:bg-[#111]">
-                  <td className="px-6 py-4"><img src={item.thumbnailUrl} className="w-20 h-12 object-cover rounded-md"/></td>
+                  <td className="px-6 py-4">
+                      {item.thumbnailUrl ? (
+                          <img src={item.thumbnailUrl} alt={item.title} className="w-20 h-12 object-cover rounded-md"/>
+                      ) : (
+                          <div className="w-20 h-12 bg-zinc-800 rounded-md flex items-center justify-center text-zinc-500 text-xs">No media</div>
+                      )}
+                  </td>
                   <td className="px-6 py-4 font-medium text-white max-w-[200px] truncate">{item.title}</td>
                   <td className="px-6 py-4">{item.creatorName}</td>
                   <td className="px-6 py-4">
@@ -350,7 +356,11 @@ const MediaTable = ({ media, onEdit, onDelete }: any) => (
         {media.map((item: MediaItem) => (
             <div key={item.id} className="bg-black/50 rounded-xl p-4 border border-zinc-800/80 flex flex-col space-y-3">
                 <div className="flex items-start space-x-3">
-                    <img src={item.thumbnailUrl} className="w-20 h-20 object-cover rounded-md flex-shrink-0 border border-zinc-800"/>
+                    {item.thumbnailUrl ? (
+                        <img src={item.thumbnailUrl} alt={item.title} className="w-20 h-20 object-cover rounded-md flex-shrink-0 border border-zinc-800"/>
+                    ) : (
+                        <div className="w-20 h-20 bg-zinc-800 rounded-md flex-shrink-0 border border-zinc-800 flex items-center justify-center text-zinc-500 text-xs">No media</div>
+                    )}
                     <div className="flex-1 min-w-0">
                         <p className="font-bold text-white mb-1 text-sm leading-snug break-words">{item.title}</p>
                         <p className="text-xs text-zinc-400 mb-2 truncate">by {item.creatorName}</p>
@@ -388,7 +398,14 @@ const UserTable = ({ users, onEdit, onDelete }: any) => (
           {users.map((user: User) => (
               <tr key={user.id} className="border-b border-zinc-800 hover:bg-[#111]">
                   <td className="px-6 py-4 font-medium text-white flex items-center">
-                      <img src={user.avatarUrl} className="w-8 h-8 rounded-full mr-3"/>{user.name}
+                      {user.avatarUrl ? (
+                          <img src={user.avatarUrl} alt={user.name} className="w-8 h-8 rounded-full mr-3 object-cover"/>
+                      ) : (
+                          <div className="w-8 h-8 rounded-full mr-3 bg-zinc-800 text-yellow-500 font-bold flex items-center justify-center text-xs flex-shrink-0">
+                              {(user.name || "U").charAt(0).toUpperCase()}
+                          </div>
+                      )}
+                      {user.name}
                   </td>
                   <td className="px-6 py-4">{user.role}</td>
                   <td className="px-6 py-4">
@@ -409,7 +426,13 @@ const UserTable = ({ users, onEdit, onDelete }: any) => (
         {users.map((user: User) => (
             <div key={user.id} className="bg-black/50 rounded-xl p-4 border border-zinc-800/80 flex flex-col space-y-3">
                 <div className="flex items-center space-x-3">
-                    <img src={user.avatarUrl} className="w-12 h-12 rounded-full border border-zinc-800 flex-shrink-0"/>
+                    {user.avatarUrl ? (
+                        <img src={user.avatarUrl} alt={user.name} className="w-12 h-12 rounded-full border border-zinc-800 flex-shrink-0 object-cover"/>
+                    ) : (
+                        <div className="w-12 h-12 rounded-full border border-zinc-800 bg-zinc-800 text-yellow-500 font-bold flex items-center justify-center text-sm flex-shrink-0">
+                            {(user.name || "U").charAt(0).toUpperCase()}
+                        </div>
+                    )}
                     <div className="flex-1 min-w-0">
                         <p className="font-bold text-white text-sm truncate">{user.name}</p>
                         <p className="text-xs text-zinc-400 mb-1">{user.role}</p>
@@ -446,7 +469,14 @@ const TalentTable = ({ talent, onEdit, onDelete }: any) => (
           {talent.map((t: TalentProfile) => (
               <tr key={t.id} className="border-b border-zinc-800 hover:bg-[#111]">
                   <td className="px-6 py-4 font-medium text-white flex items-center">
-                      <img src={t.imageUrl} className="w-8 h-8 rounded-full mr-3"/>{t.name}
+                      {t.imageUrl ? (
+                          <img src={t.imageUrl} alt={t.name} className="w-8 h-8 rounded-full mr-3 object-cover"/>
+                      ) : (
+                          <div className="w-8 h-8 rounded-full mr-3 bg-zinc-800 text-yellow-500 font-bold flex items-center justify-center text-xs flex-shrink-0">
+                              {(t.name || "T").charAt(0).toUpperCase()}
+                          </div>
+                      )}
+                      {t.name}
                   </td>
                   <td className="px-6 py-4">{t.location}</td>
                   <td className="px-6 py-4 flex items-center">
@@ -463,7 +493,13 @@ const TalentTable = ({ talent, onEdit, onDelete }: any) => (
         {talent.map((t: TalentProfile) => (
             <div key={t.id} className="bg-black/50 rounded-xl p-4 border border-zinc-800/80 flex flex-col space-y-3">
                 <div className="flex items-center space-x-3">
-                    <img src={t.imageUrl} className="w-12 h-12 rounded-full border border-zinc-800 flex-shrink-0"/>
+                    {t.imageUrl ? (
+                        <img src={t.imageUrl} alt={t.name} className="w-12 h-12 rounded-full border border-zinc-800 flex-shrink-0 object-cover"/>
+                    ) : (
+                        <div className="w-12 h-12 rounded-full border border-zinc-800 bg-zinc-800 text-yellow-500 font-bold flex items-center justify-center text-sm flex-shrink-0">
+                            {(t.name || "T").charAt(0).toUpperCase()}
+                        </div>
+                    )}
                     <div className="flex-1 min-w-0">
                         <p className="font-bold text-white text-sm truncate">{t.name}</p>
                         <p className="text-xs text-zinc-400 flex items-center mt-0.5 truncate">

@@ -96,11 +96,15 @@ const MediaHub: React.FC<MediaHubProps> = ({ onMediaClick }) => {
 
       {/* Hero Section */}
       <div className="relative rounded-2xl md:rounded-3xl overflow-hidden h-96 md:h-[450px] border border-zinc-800 shadow-2xl group cursor-pointer active:scale-[0.99] transition-transform" onClick={() => handleHeroClick()}>
-        <img 
-          src={heroItem.thumbnailUrl} 
-          alt="Featured" 
-          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-1000"
-        />
+        {heroItem.thumbnailUrl ? (
+          <img 
+            src={heroItem.thumbnailUrl} 
+            alt="Featured" 
+            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-1000"
+          />
+        ) : (
+          <div className="w-full h-full bg-zinc-900" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent flex flex-col justify-end p-6 md:p-12">
           <div className="flex items-center space-x-2 mb-3">
             <span className="bg-yellow-500 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white shadow-lg shadow-yellow-500/30">
@@ -155,11 +159,17 @@ const MediaHub: React.FC<MediaHubProps> = ({ onMediaClick }) => {
               className="flex-shrink-0 w-32 md:w-48 group cursor-pointer active:scale-95 transition-transform"
             >
               <div className="relative aspect-[3/4] rounded-xl md:rounded-2xl overflow-hidden mb-2 border border-zinc-800 group-hover:border-yellow-500/50 transition-all duration-500">
-                <img 
-                  src={model.imageUrl} 
-                  alt={model.name} 
-                  className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" 
-                />
+                {model.imageUrl ? (
+                  <img 
+                    src={model.imageUrl} 
+                    alt={model.name} 
+                    className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" 
+                  />
+                ) : (
+                  <div className="w-full h-full bg-zinc-900 flex items-center justify-center text-yellow-500 font-bold text-xl">
+                    {(model.name || "T").charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
                 
                 {/* Status Badges */}

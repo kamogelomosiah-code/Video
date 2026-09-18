@@ -44,19 +44,27 @@ export const api = {
   
   media: {
     scrapeMetadata: async (url: string): Promise<{ title: string; description: string; tags: string[] }> => {
+      const adminKey = (import.meta as any).env?.VITE_ADMIN_KEY || '';
       const res = await fetch('/api/scrape-metadata', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(adminKey ? { 'x-admin-key': adminKey } : {})
+        },
         body: JSON.stringify({ url })
       });
       if (!res.ok) throw new Error('Scrape failed');
       return res.json();
     },
     uploadFile: async (file: File): Promise<string> => {
+      const adminKey = (import.meta as any).env?.VITE_ADMIN_KEY || '';
       const formData = new FormData();
       formData.append('file', file);
       const res = await fetch('/api/upload', {
         method: 'POST',
+        headers: {
+          ...(adminKey ? { 'x-admin-key': adminKey } : {})
+        },
         body: formData
       });
       if (!res.ok) throw new Error('Upload failed');
