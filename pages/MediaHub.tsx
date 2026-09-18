@@ -4,7 +4,6 @@ import AdBanner from '../components/AdBanner';
 import { MediaItem, TalentProfile } from '../types';
 import { Play, Grid, Star, Camera, Film, View, ChevronRight } from 'lucide-react';
 import { api } from '../services/api';
-import { store } from '../services/store';
 
 const CATEGORIES = [
   { id: 'all', label: 'All', icon: Grid },

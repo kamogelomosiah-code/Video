@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { TalentProfile } from '../types';
 import { MapPin, Star, ShieldCheck, CheckCircle2, MessageCircle, Calendar } from 'lucide-react';
 import { api } from '../services/api';
-import { store } from '../services/store';
 
 const TalentDirectory: React.FC = () => {
   const [talent, setTalent] = useState<TalentProfile[]>([]);
@@ -75,15 +74,13 @@ const TalentDirectory: React.FC = () => {
     }, 1500);
   };
 
-  const handleBook = (name: string) => {
-      // Simulate booking - can be moved to API later
-      store.addNotification({
-          userId: 'guest', // Current user
-          type: 'booking',
-          message: `Booking request sent to ${name}. Pending confirmation.`
-      });
+  const handleBook = async (name: string) => {
+      const user = await api.auth.getSession();
+      if (!user) {
+          alert('Please log in to book talent.');
+          return;
+      }
       setBookedTalent(name);
-      
       // Clear toast after 3s
       setTimeout(() => setBookedTalent(null), 3000);
   };

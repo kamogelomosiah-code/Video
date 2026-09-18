@@ -11,7 +11,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import Auth from './pages/Auth';
 import AgeGate from './components/AgeGate';
 import BottomNav from './components/BottomNav';
-import { generateAvatar } from './services/store';
+import { generateAvatar } from './services/avatar';
 import { api } from './services/api';
 
 import MessagesPage from './pages/Messages';
@@ -55,12 +55,16 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const initSession = async () => {
-        await api.system.init();
+      try {
         const sessionUser = await api.auth.getSession();
         if (sessionUser) {
           setCurrentUser(sessionUser);
         }
+      } catch (err) {
+        console.error('Failed to restore session:', err);
+      } finally {
         setIsInitializing(false);
+      }
     };
     initSession();
   }, []);
@@ -75,8 +79,19 @@ const App: React.FC = () => {
     else localStorage.removeItem('elysian_viewing_user_id');
   }, [currentPage, selectedMediaId, viewingUserId]);
 
+  // Auth guard: redirect guests away from protected views
+  useEffect(() => {
+    if (isInitializing) return;
+    if (currentUser.id === 'guest') {
+      if (currentPage === 'admin-dashboard' || currentPage === 'profile' || currentPage === 'messages') {
+        setCurrentPage('media');
+      }
+    } else if (currentUser.role !== UserRole.ADMIN && currentPage === 'admin-dashboard') {
+      setCurrentPage('media');
+    }
+  }, [isInitializing, currentUser, currentPage]);
+
   const handleLogin = (user: User) => {
-    // Session is saved inside api.auth logic (via store) but we update local state
     setCurrentUser(user);
     if (user.role === UserRole.ADMIN) {
       setCurrentPage('admin-dashboard');
@@ -90,6 +105,7 @@ const App: React.FC = () => {
     setCurrentUser(GUEST_USER);
     setCurrentPage('media');
     setViewingUserId(null);
+    setSelectedMediaId(null);
   };
   
   const handleUserUpdate = (user: User) => {

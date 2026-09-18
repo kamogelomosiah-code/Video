@@ -89,8 +89,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   
   const handleUserSubmit = async (formData: any) => { 
       try {
-        if (editingUser) await api.auth.updateProfile(editingUser.id, formData); 
-        else await api.auth.register(formData); 
+        if (editingUser) await api.users.update(editingUser.id, formData); 
+        else await api.users.create(formData); 
         fetchData(); 
         closeUserModal(); 
       } catch (e) { alert('Operation failed'); }
@@ -121,10 +121,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       } 
   };
   
-  const handleDeleteUser = (id: string) => { 
+  const handleDeleteUser = async (id: string) => { 
       if (id === user.id) { alert("Cannot delete your own admin account."); return; } 
       if (window.confirm('Are you sure you want to delete this user?')) { 
-          alert('User deletion is restricted in this demo environment.'); 
+          try {
+            await api.users.delete(id);
+            fetchData();
+          } catch (e) { alert('Operation failed'); }
       } 
   };
   

@@ -3,7 +3,7 @@ import { User, MediaItem, UserRole } from '../types';
 import { ShieldCheck, Grid, Edit3, Camera, CheckCircle, AlertCircle, Lock, Crown, Plus } from 'lucide-react';
 import MediaGrid from '../components/MediaGrid';
 import { api } from '../services/api';
-import { store } from '../services/store'; // Only used for session saving if strictly needed, or handle via api
+import { session } from '../services/session';
 import UploadMedia from './UploadMedia';
 import PaymentModal from '../components/PaymentModal';
 
@@ -74,7 +74,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, currentUser, onMediaC
           if (imageType === 'avatar') {
               try {
                   const updatedUser = await api.auth.updateProfile(userId, { avatarUrl: newUrl });
-                  store.saveSession(updatedUser); // Helper needed for local session storage if we keep it
+                  session.updateUser(updatedUser);
                   onUserUpdate(updatedUser);
                   setProfileUser(updatedUser);
               } catch (e) {
@@ -105,7 +105,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, currentUser, onMediaC
 
     try {
         const updatedUser = await api.auth.updateProfile(userId, updates);
-        store.saveSession(updatedUser);
+        session.updateUser(updatedUser);
         onUserUpdate(updatedUser);
         setProfileUser(updatedUser);
         setCredentialSuccess('Credentials updated successfully!');
@@ -119,8 +119,9 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, currentUser, onMediaC
 
   const handleSubscribeSuccess = async () => {
       try {
-          const updatedUser = await api.users.subscribe(currentUser.id, userId);
-          store.saveSession(updatedUser);
+          const res = await api.users.subscribe(currentUser.id, userId);
+          const updatedUser = (res as any)?.user || res;
+          session.updateUser(updatedUser);
           onUserUpdate(updatedUser);
           setShowPaymentModal(false);
       } catch (e) {

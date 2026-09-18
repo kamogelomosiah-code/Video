@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Lock, User, ArrowRight, MailCheck, AlertCircle } from 'lucide-react';
 import { UserRole } from '../types';
 import { api } from '../services/api';
-import { generateAvatar } from '../services/store';
+import { generateAvatar } from '../services/avatar';
 
 interface AuthProps {
   onLogin: (data: any) => void;
@@ -20,6 +20,8 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onNavigateBack }) => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState<UserRole>(UserRole.CONSUMER);
+  const [pin, setPin] = useState('');
+  const [needsPin, setNeedsPin] = useState(false);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,19 +30,22 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onNavigateBack }) => {
 
     try {
         if (authMode === 'login') {
-            const user = await api.auth.login(email, password);
+            const user = await api.auth.login(email, password, needsPin ? pin : undefined);
             onLogin(user);
         } else {
             const newUser = await api.auth.register({
                 name,
                 email,
-                role,
-                verified: false,
-                avatarUrl: generateAvatar(name)
+                password,
+                role
             });
             onLogin(newUser);
         }
     } catch (err: any) {
+        if (err?.data?.requiresPin) {
+            setNeedsPin(true);
+            return;
+        }
         setError(err.message || 'Authentication failed. Please try again.');
     } finally {
         setIsLoading(false);
@@ -63,8 +68,10 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onNavigateBack }) => {
     setEmail('');
     setPassword('');
     setName('');
+    setPin('');
+    setNeedsPin(false);
     setResetEmailSent(false);
-  }
+  };
 
   const renderAuthForms = () => (
     <>
@@ -105,6 +112,27 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onNavigateBack }) => {
             <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className={`w-full bg-[#111] border rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:ring-1 transition-all placeholder:text-zinc-600 ${error ? 'border-yellow-400 focus:border-yellow-400 focus:ring-yellow-400' : 'border-zinc-800 focus:border-yellow-500 focus:ring-yellow-500'}`} placeholder="••••••••" />
           </div>
         </div>
+
+        {authMode === 'login' && needsPin && (
+          <div className="space-y-2 animate-fade-in">
+            <label className="text-sm font-medium text-yellow-400">Security PIN (Admin Verification)</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-yellow-500" />
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                required
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                className="w-full bg-[#111] border border-yellow-500 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:ring-1 focus:ring-yellow-400 placeholder:text-zinc-600 tracking-widest text-center text-lg font-mono"
+                placeholder="••••••"
+                autoFocus
+              />
+            </div>
+          </div>
+        )}
 
         {authMode === 'login' && (
            <div className="text-right -mt-4">

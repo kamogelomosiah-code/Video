@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { UploadCloud, DownloadCloud, FileJson, Copy, Check } from 'lucide-react';
-import { store } from '../services/store';
+import { api } from '../services/api';
 import { MediaItem } from '../types';
 
 const AdminBulkImport: React.FC = () => {
@@ -29,13 +29,18 @@ const AdminBulkImport: React.FC = () => {
     };
 
     // Download videos JSON export
-    const handleDownload = () => {
-        const mediaData = store.getMedia().filter(item => item.mediaType === 'video');
-        const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(mediaData, null, 2))}`;
-        const link = document.createElement('a');
-        link.href = jsonString;
-        link.download = 'videos-export.json';
-        link.click();
+    const handleDownload = async () => {
+        try {
+            const all = await api.media.getAll();
+            const mediaData = all.filter(item => item.mediaType === 'video');
+            const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(mediaData, null, 2))}`;
+            const link = document.createElement('a');
+            link.href = jsonString;
+            link.download = 'videos-export.json';
+            link.click();
+        } catch {
+            alert('Failed to export videos');
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -50,7 +55,7 @@ const AdminBulkImport: React.FC = () => {
         }
 
         const reader = new FileReader();
-        reader.onload = (event) => {
+        reader.onload = async (event) => {
             try {
                 const content = event.target?.result;
                 if (typeof content !== 'string') {
@@ -86,7 +91,7 @@ const AdminBulkImport: React.FC = () => {
                    throw new Error("Invalid JSON format. Missing title field.");
                 }
 
-                store.importMedia(itemsToImport);
+                await api.media.importBulk(itemsToImport);
                 setStatus(`${itemsToImport.length} videos imported successfully!`);
             } catch (err: any) {
                 setStatus(err.message || 'Import failed: Invalid JSON file.');

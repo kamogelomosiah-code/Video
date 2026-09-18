@@ -1,10 +1,10 @@
 /**
  * server.ts
  * 
- * Elysian Full-Stack Express Server.
- * Configures connection to MongoDB with fallback local JSON persistence,
- * exposes APIs for content state sync and GridFS file uploads, and
- * integrates Vite middleware in development or static asset serving in production.
+ * Elysian Full-Stack Express 5 Backend.
+ * Supports MongoDB with GridFS file storage and automatic fallback to data.json and local disk.
+ * Handles auth with scrypt+salt, session tokens with 30-day TTL, admin PIN gate,
+ * per-entity CRUD routes, metadata scraping with Gemini, and Vite integration.
  */
 
 import express, { Request, Response, NextFunction } from "express";
@@ -22,6 +22,7 @@ import { promisify } from "util";
 
 dotenv.config({ override: true });
 dotenv.config({ path: ".env.local", override: true });
+
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const ADMIN_KEY = process.env.ADMIN_KEY || "";
@@ -30,6 +31,8 @@ const UPLOAD_DIR = path.join(process.cwd(), "uploads");
 const scryptAsync = promisify(scrypt);
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const DATA_FILE = path.join(process.cwd(), "data.json");
+
+// --- Password & Session Helpers ---
 
 async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16).toString("hex");
@@ -54,13 +57,26 @@ function generateId(): string {
   return Math.random().toString(36).slice(2, 11) + Date.now().toString(36).slice(-4);
 }
 
+// --- Storage & Database Layer ---
+
 let jsonDB: any = null;
 async function loadJsonDB(): Promise<any> {
   if (jsonDB) return jsonDB;
-  jsonDB = { media: [], users: [], talentProfiles: [], messages: [], notifications: [], comments: [], activityLogs: [], sessions: [], siteSettings: {} };
+  jsonDB = {
+    media: [],
+    users: [],
+    talentProfiles: [],
+    messages: [],
+    notifications: [],
+    comments: [],
+    activityLogs: [],
+    sessions: [],
+    siteSettings: { _id: "site", featuredMediaId: null }
+  };
   try {
     if (existsSync(DATA_FILE)) {
-      jsonDB = { ...jsonDB, ...JSON.parse(await fs.readFile(DATA_FILE, "utf-8")) };
+      const parsed = JSON.parse(await fs.readFile(DATA_FILE, "utf-8"));
+      jsonDB = { ...jsonDB, ...parsed };
     }
   } catch (e: any) {
     console.error("[db] Failed to read data.json:", e.message);
@@ -70,19 +86,33 @@ async function loadJsonDB(): Promise<any> {
 
 async function saveJsonDB(): Promise<void> {
   if (!jsonDB) return;
-  const tmp = DATA_FILE + ".tmp";
-  await fs.writeFile(tmp, JSON.stringify(jsonDB, null, 2), "utf-8");
-  await fs.rename(tmp, DATA_FILE);
+  try {
+    const tmp = DATA_FILE + ".tmp";
+    await fs.writeFile(tmp, JSON.stringify(jsonDB, null, 2), "utf-8");
+    await fs.rename(tmp, DATA_FILE);
+  } catch (e: any) {
+    console.error("[db] Failed to save data.json:", e.message);
+  }
 }
 
-let mongo: any = null;
-let db: any = null;
-let bucket: any = null;
+let mongo: Db | null = null;
+let db: Db | null = null;
+let bucket: GridFSBucket | null = null;
+
+async function listCollection(name: string): Promise<any[]> {
+  if (mongo) {
+    return await mongo.collection(name).find().toArray();
+  }
+  const dbInst = await loadJsonDB();
+  return (dbInst[name] ||= []);
+}
 
 async function findOneByField<T = any>(name: string, field: string, value: any): Promise<T | null> {
-  if (mongo) return mongo.collection(name).findOne({ [field]: value }) as any;
-  const dbInst = await loadJsonDB();
-  return ((dbInst as any)[name] as any[] || []).find((d) => d[field] === value) || null;
+  if (mongo) {
+    return (await mongo.collection(name).findOne({ [field]: value })) as any;
+  }
+  const items = await listCollection(name);
+  return items.find((d: any) => d[field] === value) || null;
 }
 
 async function upsertDoc<T extends { id: string }>(name: string, doc: T): Promise<T> {
@@ -93,30 +123,105 @@ async function upsertDoc<T extends { id: string }>(name: string, doc: T): Promis
   const dbInst = await loadJsonDB();
   const arr = ((dbInst as any)[name] ||= []) as any[];
   const idx = arr.findIndex((d) => d.id === doc.id);
-  if (idx >= 0) arr[idx] = doc; else arr.push(doc);
+  if (idx >= 0) arr[idx] = doc;
+  else arr.push(doc);
   await saveJsonDB();
   return doc;
 }
 
+async function removeDoc(name: string, id: string): Promise<boolean> {
+  if (mongo) {
+    const res = await mongo.collection(name).deleteOne({ id });
+    return res.deletedCount > 0;
+  }
+  const dbInst = await loadJsonDB();
+  const arr = (dbInst[name] ||= []) as any[];
+  dbInst[name] = arr.filter((d: any) => d.id !== id);
+  await saveJsonDB();
+  return true;
+}
+
+async function replaceCollection(name: string, items: any[]): Promise<void> {
+  if (mongo) {
+    await mongo.collection(name).deleteMany({});
+    if (items.length > 0) {
+      await mongo.collection(name).insertMany(items);
+    }
+    return;
+  }
+  const dbInst = await loadJsonDB();
+  dbInst[name] = items;
+  await saveJsonDB();
+}
+
+async function getSettings(): Promise<any> {
+  if (mongo) {
+    const doc = await mongo.collection("siteSettings").findOne({ _id: "site" });
+    return doc || { _id: "site", featuredMediaId: null };
+  }
+  const dbInst = await loadJsonDB();
+  return (dbInst.siteSettings ||= { _id: "site", featuredMediaId: null });
+}
+
+async function setSettings(updates: any): Promise<any> {
+  const clean = { ...updates, _id: "site" };
+  if (mongo) {
+    await mongo.collection("siteSettings").updateOne(
+      { _id: "site" },
+      { $set: clean },
+      { upsert: true }
+    );
+    return clean;
+  }
+  const dbInst = await loadJsonDB();
+  dbInst.siteSettings = { ...(dbInst.siteSettings || { _id: "site" }), ...clean };
+  await saveJsonDB();
+  return dbInst.siteSettings;
+}
+
+// --- Session Management ---
+
 async function createSession(userId: string): Promise<string> {
   const token = generateToken();
-  const doc = { token, userId, createdAt: new Date(), expiresAt: new Date(Date.now() + SESSION_TTL_MS) };
-  if (mongo) await mongo.collection("sessions").insertOne(doc);
-  else { const dbInst = await loadJsonDB(); (dbInst.sessions ||= []).push(doc); await saveJsonDB(); }
+  const doc = {
+    token,
+    userId,
+    createdAt: new Date(),
+    expiresAt: new Date(Date.now() + SESSION_TTL_MS)
+  };
+  if (mongo) {
+    await mongo.collection("sessions").insertOne(doc);
+  } else {
+    const dbInst = await loadJsonDB();
+    (dbInst.sessions ||= []).push(doc);
+    await saveJsonDB();
+  }
   return token;
 }
 
 async function deleteSession(token: string): Promise<void> {
-  if (mongo) await mongo.collection("sessions").deleteOne({ token });
-  else { const dbInst = await loadJsonDB(); dbInst.sessions = (dbInst.sessions || []).filter((s: any) => s.token !== token); await saveJsonDB(); }
+  if (mongo) {
+    await mongo.collection("sessions").deleteOne({ token });
+  } else {
+    const dbInst = await loadJsonDB();
+    dbInst.sessions = (dbInst.sessions || []).filter((s: any) => s.token !== token);
+    await saveJsonDB();
+  }
 }
 
 async function getSessionUser(token: string): Promise<any | null> {
   let session: any = null;
-  if (mongo) session = await mongo.collection("sessions").findOne({ token });
-  else { const dbInst = await loadJsonDB(); session = (dbInst.sessions || []).find((s: any) => s.token === token); }
+  if (mongo) {
+    session = await mongo.collection("sessions").findOne({ token });
+  } else {
+    const dbInst = await loadJsonDB();
+    session = (dbInst.sessions || []).find((s: any) => s.token === token);
+  }
   if (!session) return null;
-  if (new Date(session.expiresAt).getTime() < Date.now()) { await deleteSession(token); return null; }
+  if (new Date(session.expiresAt).getTime() < Date.now()) {
+    await deleteSession(token);
+    return null;
+  }
   return await findOneByField("users", "id", session.userId);
 }
 
@@ -130,6 +235,18 @@ function stripSecrets(user: any) {
   if (!user) return user;
   const { passwordHash, pin, ...safe } = user;
   return safe;
+}
+
+async function logActivity(action: string, details?: any, userId?: string) {
+  const log = {
+    id: generateId(),
+    action,
+    details: details || {},
+    userId: userId || "admin-user",
+    timestamp: new Date().toISOString(),
+  };
+  await upsertDoc("activityLogs", log);
+  return log;
 }
 
 async function seedAdmin(): Promise<void> {
@@ -156,13 +273,28 @@ async function seedAdmin(): Promise<void> {
   console.log("[seed] Admin created — username: admin, PIN: 225533");
 }
 
-function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  if (!ADMIN_KEY) return next();
+async function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  // Check X-Admin-Key header
   const key = req.headers["x-admin-key"];
-  if (key !== ADMIN_KEY) {
-    return res.status(401).json({ error: "Unauthorized — provide X-Admin-Key header" });
+  if (ADMIN_KEY && key === ADMIN_KEY) {
+    return next();
   }
-  next();
+
+  // Check session token for ADMIN role
+  const token = getToken(req);
+  if (token) {
+    const user = await getSessionUser(token);
+    if (user && user.role === "ADMIN") {
+      (req as any).user = user;
+      return next();
+    }
+  }
+
+  if (!ADMIN_KEY && !token) {
+    return next();
+  }
+
+  return res.status(401).json({ error: "Unauthorized — provide valid ADMIN session token or X-Admin-Key header" });
 }
 
 async function requireUser(req: Request, res: Response, next: NextFunction) {
@@ -203,30 +335,30 @@ async function startServer() {
   const PORT = 3000;
 
   // MongoDB Connection Setup
-  const uri = process.env.MONGODB_URI;
-  if (uri) {
+  const rawUri = (process.env.MONGODB_URI || "").trim();
+  const cleanUri = rawUri.endsWith(" mongo") ? rawUri.slice(0, -6).trim() : rawUri;
+  if (cleanUri) {
     try {
-      const client = new MongoClient(uri, {
+      const client = new MongoClient(cleanUri, {
         serverSelectionTimeoutMS: 5000,
         connectTimeoutMS: 5000,
       });
       await client.connect();
       mongo = client.db();
       db = mongo;
-      // Initialize GridFS bucket for media/file storage inside MongoDB
-      bucket = new GridFSBucket(mongo, { bucketName: 'uploads' });
+      bucket = new GridFSBucket(mongo, { bucketName: "uploads" });
       console.log("Connected to MongoDB successfully");
-    } catch (err) {
-      console.error("MongoDB connection error:", err);
+    } catch (err: any) {
+      console.error("MongoDB connection error:", err.message);
     }
   } else {
-    console.warn("MONGODB_URI not found. Please add it to your platform secrets. Falling back to local data.json & memory storage.");
+    console.warn("MONGODB_URI not found. Falling back to local data.json & disk storage.");
   }
 
   await loadJsonDB();
   await seedAdmin();
 
-  // Middleware to parse JSON payloads with custom 50mb body limit for raw assets
+  // Middleware to parse JSON payloads with 50mb body limit
   app.use(express.json({ limit: "50mb", strict: false }));
   app.use((err: any, req: any, res: any, next: any) => {
     if (err instanceof SyntaxError && "body" in err) {
@@ -235,12 +367,11 @@ async function startServer() {
     next(err);
   });
 
-  // Multer in-memory storage configuration for handling file uploads
   const upload = multer({ storage: multer.memoryStorage() });
 
   // --- API Routes ---
 
-  // Healthcheck endpoint for containers and platform ingress
+  // Healthcheck endpoint
   app.get("/api/health", (_req, res) => {
     res.json({
       status: "ok",
@@ -254,69 +385,46 @@ async function startServer() {
     });
   });
 
-  /**
-   * GET /api/data
-   * Retrieves the global application state from MongoDB or falls back to data.json.
-   */
-  app.get("/api/data", async (req, res) => {
-    if (db) {
-      try {
-        const state = await db.collection('state').findOne({ _id: 'global_state' });
-        res.json(state ? state.data : {});
-      } catch (err) {
-        console.error("Error reading from MongoDB:", err);
-        res.json({});
-      }
-    } else if (existsSync(DATA_FILE)) {
-      try {
-        const data = await fs.readFile(DATA_FILE, "utf-8");
-        res.json(JSON.parse(data));
-      } catch (err) {
-        console.error("Error reading data.json:", err);
-        res.json({});
-      }
-    } else {
+  // Legacy global data blob endpoint (fans out to per-entity collections)
+  app.get("/api/data", async (_req, res) => {
+    try {
+      const media = await listCollection("media");
+      const users = (await listCollection("users")).map(stripSecrets);
+      const talentProfiles = await listCollection("talentProfiles");
+      const messages = await listCollection("messages");
+      const notifications = await listCollection("notifications");
+      const comments = await listCollection("comments");
+      const activityLogs = await listCollection("activityLogs");
+      const siteSettings = await getSettings();
+      res.json({ media, users, talentProfiles, messages, notifications, comments, activityLogs, siteSettings });
+    } catch (err) {
+      console.error("Error reading data:", err);
       res.json({});
     }
   });
 
-  /**
-   * POST /api/data
-   * Saves the entire state object into MongoDB or local storage.
-   */
   app.post("/api/data", requireAdmin, async (req, res) => {
     if (!isPlainObject(req.body)) {
       return res.status(400).json({ error: "Body must be a JSON object" });
     }
-    if (db) {
-      try {
-        await db.collection('state').updateOne(
-          { _id: 'global_state' },
-          { $set: { data: req.body } },
-          { upsert: true }
-        );
-        res.json({ success: true });
-      } catch (err) {
-        console.error("Error writing to MongoDB:", err);
-        res.status(500).json({ error: "Failed to save data to MongoDB" });
-      }
-    } else {
-      try {
-        const tmp = DATA_FILE + ".tmp";
-        await fs.writeFile(tmp, JSON.stringify(req.body, null, 2), "utf-8");
-        await fs.rename(tmp, DATA_FILE);
-        res.json({ success: true });
-      } catch (err) {
-        console.error("Error writing data.json:", err);
-        res.status(500).json({ error: "Failed to save data locally" });
-      }
+    try {
+      const body = req.body;
+      if (Array.isArray(body.media)) await replaceCollection("media", body.media);
+      if (Array.isArray(body.users)) await replaceCollection("users", body.users);
+      if (Array.isArray(body.talentProfiles)) await replaceCollection("talentProfiles", body.talentProfiles);
+      if (Array.isArray(body.messages)) await replaceCollection("messages", body.messages);
+      if (Array.isArray(body.notifications)) await replaceCollection("notifications", body.notifications);
+      if (Array.isArray(body.comments)) await replaceCollection("comments", body.comments);
+      if (Array.isArray(body.activityLogs)) await replaceCollection("activityLogs", body.activityLogs);
+      if (body.siteSettings) await setSettings(body.siteSettings);
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Error writing data:", err);
+      res.status(500).json({ error: "Failed to save data" });
     }
   });
 
-  /**
-   * POST /api/scrape-metadata
-   * Scrapes external URL metadata and uses Gemini to auto-generate tube tags and description.
-   */
+  // Metadata scraping with Gemini
   app.post("/api/scrape-metadata", requireAdmin, async (req: any, res: any) => {
     const { url } = req.body;
     if (!url || typeof url !== "string") {
@@ -348,68 +456,56 @@ async function startServer() {
 
       const html = await response.text();
 
-      // Extract Title
       const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-      scrapedTitle = titleMatch ? titleMatch[1].trim() : "";
+      if (titleMatch) scrapedTitle = titleMatch[1].trim();
 
-      // Extract Meta Description and Keywords using standard Regex patterns
-      const descMatch = html.match(/<meta\s+[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i) || 
-                         html.match(/<meta\s+[^>]*content=["']([^"']+)["'][^>]*name=["']description["']/i) ||
-                         html.match(/<meta\s+[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i);
-      scrapedDesc = descMatch ? descMatch[1].trim() : "";
+      const ogTitleMatch = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i);
+      if (ogTitleMatch) scrapedTitle = ogTitleMatch[1].trim();
 
-      const keywordsMatch = html.match(/<meta\s+[^>]*name=["']keywords["'][^>]*content=["']([^"']+)["']/i) ||
-                            html.match(/<meta\s+[^>]*content=["']([^"']+)["'][^>]*name=["']keywords["']/i);
-      scrapedKeywords = keywordsMatch ? keywordsMatch[1].trim() : "";
+      const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
+      if (descMatch) scrapedDesc = descMatch[1].trim();
 
-      // Extract raw snippet from body content to provide additional context
-      bodyText = html
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-        .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "")
-        .replace(/<[^>]+>/g, " ")
-        .replace(/\s+/g, " ")
-        .substring(0, 5000)
-        .trim();
-        
-      console.log(`[Scrape] Fetched HTML. Title: "${scrapedTitle}", MetaDesc: "${scrapedDesc.substring(0, 50)}..."`);
-    } catch (err: any) {
-      console.warn(`[Scrape] Direct scraping failed (might be CORS or blocker): ${err.message}. Relying on URL breakdown for AI generation.`);
+      const ogDescMatch = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i);
+      if (ogDescMatch) scrapedDesc = ogDescMatch[1].trim();
+
+      const keywordsMatch = html.match(/<meta[^>]*name=["']keywords["'][^>]*content=["']([^"']+)["']/i);
+      if (keywordsMatch) scrapedKeywords = keywordsMatch[1].trim();
+
+      bodyText = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+                     .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+                     .replace(/<[^>]+>/g, ' ')
+                     .replace(/\s+/g, ' ')
+                     .trim()
+                     .slice(0, 3000);
+    } catch (scrapeErr: any) {
+      console.warn(`[Scrape] Direct fetch failed for ${url}:`, scrapeErr.message);
     }
 
-    // Try to query Gemini API
-    const geminiApiKey = process.env.GEMINI_API_KEY;
-    if (!geminiApiKey) {
-      console.warn("[Scrape] GEMINI_API_KEY is not defined in environment variables. Returning fallback metadata.");
-      // Fallback if no Gemini key is provided
-      const finalTitle = scrapedTitle || url.split("/").pop()?.replace(/[-_]/g, " ") || "New Tube Release";
+    if (!GEMINI_API_KEY) {
       return res.json({
-        title: finalTitle,
-        description: scrapedDesc || "Exclusive video content from Elysian creators.",
-        tags: scrapedKeywords ? scrapedKeywords.split(",").map(k => k.trim()) : ["Exclusive", "Recommended", "Tube", "HD"]
+        title: scrapedTitle || "Imported Video Media",
+        description: scrapedDesc || "Content imported from link.",
+        tags: scrapedKeywords ? scrapedKeywords.split(',').map(s => s.trim()) : ["Exclusive", "HD"],
+        category: "exclusive"
       });
     }
 
     try {
-      const ai = new GoogleGenAI({
-        apiKey: geminiApiKey,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build',
-          }
-        }
-      });
+      const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+      const prompt = `Analyze this webpage metadata and context from an adult media / entertainment video site:
+URL: ${url}
+Extracted Title: ${scrapedTitle}
+Extracted Description: ${scrapedDesc}
+Extracted Keywords: ${scrapedKeywords}
+Page Content Snippet: ${bodyText}
 
-      const prompt = `You are an advanced adult/tube media classifier and SEO optimizer. 
-I have scraped data from an external media link: "${url}".
+Please synthesize:
+1. A clean, captivating title for this video item (standard title casing, free of site domain watermarks, spam suffixes, or repetitive SEO tags).
+2. A high-quality, tasteful 1-3 sentence description summarizing the video theme, aesthetics, and performers if evident.
+3. 3-6 accurate, lowercase tags characterizing the category, theme, quality, or vibe (e.g. "cinematic", "exclusive", "glamour", "bts", "4k").
+4. One best matching category from this list: "exclusive", "bts", "4k", "vr".
 
-Extracted metadata from the link:
-- Title: "${scrapedTitle || "Unknown"}"
-- Description: "${scrapedDesc || "Unknown"}"
-- Keywords: "${scrapedKeywords || "Unknown"}"
-- Webpage snippet text: "${bodyText.substring(0, 2000) || "Unavailable"}"
-
-Your task is to analyze the metadata and URL details above to generate a highly engaging, professional adult-tube optimized Title, an exciting and rich content Description, and exactly 5 to 8 tags/categories (e.g. "Exclusive", "Brunette", "POV", "Amateur", "HD", "South African").
-Return a clean JSON conforming to the response schema. Keep descriptions descriptive and enticing.`;
+Respond ONLY with valid JSON matching the schema.`;
 
       const response = await ai.models.generateContent({
         model: GEMINI_MODEL,
@@ -424,43 +520,35 @@ Return a clean JSON conforming to the response schema. Keep descriptions descrip
               tags: {
                 type: Type.ARRAY,
                 items: { type: Type.STRING }
-              }
+              },
+              category: { type: Type.STRING }
             },
-            required: ["title", "description", "tags"]
+            required: ["title", "description", "tags", "category"]
           }
         }
       });
 
-      const resultText = response.text?.trim();
-      if (resultText) {
-        const parsed = JSON.parse(resultText);
-        console.log("[Scrape] Gemini metadata generation succeeded!");
-        return res.json(parsed);
-      } else {
-        throw new Error("Empty response from Gemini API");
-      }
-    } catch (apiErr: any) {
-      console.error("[Scrape] Error calling Gemini API:", apiErr);
-      const fallbackTitle = scrapedTitle || "New Tube Release";
-      return res.json({
-        title: fallbackTitle,
-        description: scrapedDesc || "An exciting new release uploaded on Elysian.",
-        tags: ["Exclusive", "Recommended", "Tube", "HD"]
+      const parsed = JSON.parse(response.text || "{}");
+      res.json(parsed);
+    } catch (aiErr: any) {
+      console.error("[Gemini] Enrichment failed:", aiErr);
+      res.json({
+        title: scrapedTitle || "Imported Video Media",
+        description: scrapedDesc || "Imported video content.",
+        tags: scrapedKeywords ? scrapedKeywords.split(',').map(s => s.trim()) : ["Exclusive", "Featured"],
+        category: "exclusive"
       });
     }
   });
 
-  /**
-   * POST /api/upload
-   * Receives binary files, pipes them into GridFS on MongoDB or returns Base64 fallback.
-   */
+  // File upload: pipes to GridFS when Mongo is connected, else saves to ./uploads
   app.post("/api/upload", requireAdmin, upload.single("file"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
     if (bucket) {
-      const readablePhotoStream = new Readable();
-      readablePhotoStream.push(req.file.buffer);
-      readablePhotoStream.push(null);
+      const readableStream = new Readable();
+      readableStream.push(req.file.buffer);
+      readableStream.push(null);
 
       const uploadStream = bucket.openUploadStream(req.file.originalname, {
         contentType: req.file.mimetype,
@@ -469,7 +557,7 @@ Return a clean JSON conforming to the response schema. Keep descriptions descrip
           uploadedAt: new Date().toISOString(),
         },
       });
-      readablePhotoStream.pipe(uploadStream);
+      readableStream.pipe(uploadStream);
 
       uploadStream.on("error", () => {
         res.status(500).json({ error: "Upload failed" });
@@ -486,7 +574,6 @@ Return a clean JSON conforming to the response schema. Keep descriptions descrip
         });
       });
     } else {
-      // Disk fallback — write to ./uploads/<id> and serve via /api/files/:id
       await fs.mkdir(UPLOAD_DIR, { recursive: true });
       const id = new ObjectId().toString();
       const filePath = path.join(UPLOAD_DIR, id);
@@ -509,13 +596,9 @@ Return a clean JSON conforming to the response schema. Keep descriptions descrip
     }
   });
 
-  /**
-   * GET /api/files/:id
-   * Streams a stored GridFS media file by its unique MongoDB ObjectId.
-   */
+  // Stream stored media file with HTTP Range support
   app.get("/api/files/:id", async (req, res) => {
     const id = req.params.id;
-
     let totalSize = 0;
     let contentType = "application/octet-stream";
     let streamFactory: ((start: number, end: number) => NodeJS.ReadableStream) | null = null;
@@ -595,18 +678,29 @@ Return a clean JSON conforming to the response schema. Keep descriptions descrip
     }
   });
 
-  // --- Auth routes ---
+  // --- Auth Endpoints ---
+
   app.post("/api/auth/register", async (req, res) => {
     const { name, email, username, password, role } = req.body || {};
     if (!email || !password) return res.status(400).json({ error: "email and password required" });
-    if (typeof password !== "string" || password.length < 6) return res.status(400).json({ error: "Password must be at least 6 characters" });
+    if (typeof password !== "string" || password.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    }
     const existing = await findOneByField("users", "email", email);
     if (existing) return res.status(409).json({ error: "Email already registered" });
+
     const passwordHash = await hashPassword(password);
     const user: any = {
-      id: generateId(), name: name || email, username: username || email, email,
-      role: role || "CONSUMER", verified: false, avatarUrl: "", passwordHash,
-      subscriptions: [], createdAt: new Date().toISOString(),
+      id: generateId(),
+      name: name || email,
+      username: username || email,
+      email,
+      role: role || "CONSUMER",
+      verified: false,
+      avatarUrl: "",
+      passwordHash,
+      subscriptions: [],
+      createdAt: new Date().toISOString(),
     };
     await upsertDoc("users", user);
     const token = await createSession(user.id);
@@ -619,12 +713,15 @@ Return a clean JSON conforming to the response schema. Keep descriptions descrip
     let user: any = await findOneByField("users", "email", email);
     if (!user) user = await findOneByField("users", "username", email);
     if (!user) return res.status(401).json({ error: "Invalid credentials" });
+
     const ok = await verifyPassword(password, user.passwordHash || "");
     if (!ok) return res.status(401).json({ error: "Invalid credentials" });
+
     if (user.role === "ADMIN" && user.pin) {
       if (!pin) return res.status(401).json({ error: "PIN required", requiresPin: true });
       if (String(pin) !== String(user.pin)) return res.status(401).json({ error: "Invalid PIN" });
     }
+
     const token = await createSession(user.id);
     res.json({ user: stripSecrets(user), token });
   });
@@ -642,32 +739,211 @@ Return a clean JSON conforming to the response schema. Keep descriptions descrip
     res.json({ success: true });
   });
 
-  app.put("/api/auth/profile", async (req, res) => {
-    const token = getToken(req);
-    if (!token) return res.status(401).json({ error: "Not authenticated" });
-    const user = await getSessionUser(token);
-    if (!user) return res.status(401).json({ error: "Session expired" });
+  app.put("/api/auth/profile", requireUser, async (req, res) => {
+    const user = (req as any).user;
     const updates = req.body || {};
     if (!isPlainObject(updates)) return res.status(400).json({ error: "Body must be a JSON object" });
-    delete updates.id; delete updates.role; delete updates.passwordHash; delete updates.pin;
-    if (updates.password) { updates.passwordHash = await hashPassword(updates.password); delete updates.password; }
+
+    delete updates.id;
+    delete updates.role;
+    delete updates.passwordHash;
+    delete updates.pin;
+
+    if (updates.password) {
+      updates.passwordHash = await hashPassword(updates.password);
+      delete updates.password;
+    }
     const merged = { ...user, ...updates };
     await upsertDoc("users", merged);
     res.json({ user: stripSecrets(merged) });
   });
 
-  // Private notifications feed (must be registered before /api/notifications/:id)
+  // --- Users Endpoints ---
+
+  app.get("/api/users", async (_req, res) => {
+    try {
+      const users = await listCollection("users");
+      res.json(users.map(stripSecrets));
+    } catch (e: any) {
+      res.status(500).json({ error: "Failed to list users" });
+    }
+  });
+
+  app.get("/api/users/:id", async (req, res) => {
+    try {
+      const user = await findOneByField("users", "id", req.params.id);
+      if (!user) return res.status(404).json({ error: "Not found" });
+      res.json(stripSecrets(user));
+    } catch (e: any) {
+      res.status(500).json({ error: "Failed to get user" });
+    }
+  });
+
+  app.post("/api/users", requireUser, async (req, res) => {
+    const actor = (req as any).user;
+    if (actor.role !== "ADMIN") return res.status(403).json({ error: "Admin access required" });
+    const { name, email, username, password, role, pin, verified, avatarUrl } = req.body || {};
+    if (!email) return res.status(400).json({ error: "Email required" });
+    const existing = await findOneByField("users", "email", email);
+    if (existing) return res.status(409).json({ error: "Email already in use" });
+
+    const passwordHash = password ? await hashPassword(password) : await hashPassword("password123");
+    const newUser: any = {
+      id: req.body.id || generateId(),
+      name: name || email,
+      username: username || email,
+      email,
+      role: role || "CONSUMER",
+      verified: Boolean(verified),
+      avatarUrl: avatarUrl || "",
+      passwordHash,
+      subscriptions: [],
+      createdAt: new Date().toISOString(),
+    };
+    if (pin) newUser.pin = pin;
+
+    await upsertDoc("users", newUser);
+    await logActivity("USER_CREATE", { userId: newUser.id, username: newUser.username }, actor.id);
+    res.status(201).json({ user: stripSecrets(newUser) });
+  });
+
+  app.put("/api/users/:id", requireUser, async (req, res) => {
+    const actor = (req as any).user;
+    const targetId = req.params.id;
+    const isAdmin = actor.role === "ADMIN";
+    const isSelf = actor.id === targetId;
+    if (!isAdmin && !isSelf) return res.status(403).json({ error: "Not authorized" });
+
+    const existing = await findOneByField("users", "id", targetId);
+    if (!existing) return res.status(404).json({ error: "User not found" });
+
+    const updates = { ...req.body };
+    delete updates.id;
+    if (!isAdmin) {
+      delete updates.role;
+      delete updates.pin;
+    }
+    if (updates.password) {
+      updates.passwordHash = await hashPassword(updates.password);
+      delete updates.password;
+    }
+    const merged = { ...existing, ...updates, id: targetId };
+    await upsertDoc("users", merged);
+    if (isAdmin) {
+      await logActivity("USER_UPDATE", { userId: targetId }, actor.id);
+    }
+    res.json(stripSecrets(merged));
+  });
+
+  app.delete("/api/users/:id", requireUser, async (req, res) => {
+    const actor = (req as any).user;
+    if (actor.role !== "ADMIN") return res.status(403).json({ error: "Admin access required" });
+    if (actor.id === req.params.id) return res.status(400).json({ error: "Cannot delete yourself" });
+    await removeDoc("users", req.params.id);
+    await logActivity("USER_DELETE", { userId: req.params.id }, actor.id);
+    res.json({ success: true });
+  });
+
+  app.post("/api/users/:id/subscribe", requireUser, async (req, res) => {
+    const user = (req as any).user;
+    const targetId = req.params.id;
+    if (user.id === targetId) {
+      return res.status(400).json({ error: "Cannot subscribe to yourself" });
+    }
+    const currentSubs = Array.isArray(user.subscriptions) ? user.subscriptions : [];
+    const set = new Set(currentSubs);
+    set.add(targetId);
+    user.subscriptions = Array.from(set);
+    await upsertDoc("users", user);
+    res.json({ user: stripSecrets(user) });
+  });
+
+  // --- Media rating & Bulk Import ---
+
+  app.post("/api/media/:id/rate", requireUser, async (req, res) => {
+    const user = (req as any).user;
+    const mediaId = req.params.id;
+    const like = typeof req.body.like === "boolean" ? req.body.like : Boolean(req.body.isLike);
+    const media = await findOneByField("media", "id", mediaId);
+    if (!media) return res.status(404).json({ error: "Media not found" });
+
+    let likes = Array.isArray(media.likes) ? [...media.likes] : [];
+    let dislikes = Array.isArray(media.dislikes) ? [...media.dislikes] : [];
+
+    likes = likes.filter((uid: string) => uid !== user.id);
+    dislikes = dislikes.filter((uid: string) => uid !== user.id);
+
+    if (like) {
+      likes.push(user.id);
+    } else {
+      dislikes.push(user.id);
+    }
+
+    media.likes = likes;
+    media.dislikes = dislikes;
+    await upsertDoc("media", media);
+    res.json({ likes: likes.length, dislikes: dislikes.length });
+  });
+
+  app.post("/api/media/bulk", requireUser, async (req, res) => {
+    const user = (req as any).user;
+    if (user.role !== "ADMIN") return res.status(403).json({ error: "Admin access required" });
+    const items = Array.isArray(req.body) ? req.body : [];
+    for (const item of items) {
+      await upsertDoc("media", item);
+    }
+    await logActivity("MEDIA_IMPORT", { count: items.length }, user.id);
+    res.json({ success: true, count: items.length });
+  });
+
+  // --- Conversations & Notifications ---
+
+  app.get("/api/messages/conversation/:userId", requireUser, async (req, res) => {
+    const user = (req as any).user;
+    const targetId = req.params.userId;
+    const all = await listCollection("messages");
+    const conversation = all.filter(
+      (m: any) =>
+        (m.senderId === user.id && m.receiverId === targetId) ||
+        (m.senderId === targetId && m.receiverId === user.id)
+    );
+    conversation.sort(
+      (a: any, b: any) =>
+        new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+    );
+    res.json(conversation);
+  });
+
   app.get("/api/notifications/mine", requireUser, async (req, res) => {
     const user = (req as any).user;
     try {
-      const items = mongo
-        ? await mongo.collection("notifications").find({ userId: user.id }).toArray()
-        : ((await loadJsonDB() as any).notifications || []).filter((n: any) => n.userId === user.id);
+      if (mongo) {
+        const items = await mongo.collection("notifications").find({ userId: user.id }).toArray();
+        return res.json(items.reverse());
+      }
+      const dbInst = await loadJsonDB();
+      const items = ((dbInst.notifications || []) as any[]).filter((n: any) => n.userId === user.id);
       res.json(items.reverse());
     } catch (e: any) {
       console.error("[notifications] mine:", e);
       res.status(500).json({ error: "Failed to load notifications" });
     }
+  });
+
+  // --- Site Settings ---
+
+  app.get("/api/siteSettings", async (_req, res) => {
+    const settings = await getSettings();
+    res.json(settings || { _id: "site", featuredMediaId: null });
+  });
+
+  app.put("/api/siteSettings", requireUser, async (req, res) => {
+    const user = (req as any).user;
+    if (user.role !== "ADMIN") return res.status(403).json({ error: "Admin access required" });
+    if (!isPlainObject(req.body)) return res.status(400).json({ error: "Body must be a JSON object" });
+    const updated = await setSettings(req.body);
+    await logActivity("SETTINGS_UPDATE", req.body, user.id);
+    res.json(updated);
   });
 
   // --- Per-entity CRUD routes ---
@@ -695,9 +971,7 @@ Return a clean JSON conforming to the response schema. Keep descriptions descrip
     // List all (public)
     router.get("/", async (_req, res) => {
       try {
-        const items = mongo
-          ? await mongo.collection(name).find().toArray()
-          : ((await loadJsonDB() as any)[name] || []);
+        const items = await listCollection(name);
         res.json(items);
       } catch (e: any) {
         console.error(`[${name}] list:`, e);
@@ -807,13 +1081,7 @@ Return a clean JSON conforming to the response schema. Keep descriptions descrip
           return res.status(403).json({ error: "Not allowed to delete this record" });
         }
 
-        if (mongo) {
-          await mongo.collection(name).deleteOne({ id: req.params.id });
-        } else {
-          const db = await loadJsonDB();
-          (db as any)[name] = ((db as any)[name] || []).filter((d: any) => d.id !== req.params.id);
-          await saveJsonDB();
-        }
+        await removeDoc(name, req.params.id);
         res.json({ success: true });
       } catch (e: any) {
         console.error(`[${name}] delete:`, e);
@@ -824,19 +1092,6 @@ Return a clean JSON conforming to the response schema. Keep descriptions descrip
     app.use(`/api/${name}`, router);
   }
 
-  app.get("/api/users", async (_req, res) => {
-    try {
-      const users = mongo ? await mongo.collection("users").find().toArray() : ((await loadJsonDB()).users || []);
-      res.json(users.map(stripSecrets));
-    } catch (e: any) { res.status(500).json({ error: "Failed to list users" }); }
-  });
-
-  app.get("/api/users/:id", async (req, res) => {
-    const user = await findOneByField("users", "id", req.params.id);
-    if (!user) return res.status(404).json({ error: "Not found" });
-    res.json(stripSecrets(user));
-  });
-
   // Return 404 for any unhandled API routes before delegating to front-end
   app.use((req, res, next) => {
     if (req.path.startsWith("/api/")) {
@@ -846,8 +1101,6 @@ Return a clean JSON conforming to the response schema. Keep descriptions descrip
   });
 
   // --- Front-end Integration / Asset Serving ---
-  // If we are in development, integrate Vite middlewares to hot reload code changes.
-  // In production, we serve static compiled files directly from the `/dist` directory.
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },

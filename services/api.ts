@@ -1,179 +1,276 @@
-import { store } from './store';
-import { User, MediaItem, TalentProfile, Comment, Notification, Message } from '../types';
+import { session } from './session';
+import {
+  User,
+  MediaItem,
+  TalentProfile,
+  NotificationItem,
+  MessageItem,
+  ActivityLogItem
+} from '../types';
 
-// Helper to simulate network latency
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = session.getToken();
+  const headers: Record<string, string> = {};
+
+  if (!(options?.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  if (options?.headers) {
+    Object.assign(headers, options.headers);
+  }
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(path, { ...options, headers });
+
+  const text = await res.text().catch(() => '');
+  let payload: any = null;
+  try {
+    payload = text ? JSON.parse(text) : null;
+  } catch {
+    payload = text;
+  }
+
+  if (!res.ok) {
+    const error: any = new Error((payload && payload.error) || res.statusText || 'Request failed');
+    error.status = res.status;
+    error.data = payload;
+    throw error;
+  }
+
+  return payload as T;
+}
 
 export const api = {
   system: {
-    init: async (): Promise<void> => {
-      await store.initFromServer();
-    },
-    getActivityLogs: async () => {
-      await delay(200);
-      return store.getActivityLogs();
-    }
+    init: async (): Promise<void> => Promise.resolve(),
+    getActivityLogs: (): Promise<ActivityLogItem[]> => request<ActivityLogItem[]>('/api/activityLogs'),
   },
+
   auth: {
-    login: async (email: string, password?: string): Promise<User> => {
-      await delay(800);
-      const user = store.login(email, password);
-      if (!user) throw new Error('Invalid credentials');
-      return user;
+    login: async (email: string, password: string, pin?: string): Promise<User> => {
+      const res = await request<{ user: User; token: string }>('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password, pin }),
+      });
+      session.save(res.user, res.token);
+      return res.user;
     },
-    register: async (userData: Omit<User, 'id'>): Promise<User> => {
-      await delay(1000);
-      const existing = store.login(userData.email || '');
-      if (existing) throw new Error('User already exists');
-      return store.register(userData);
+
+    register: async ({ name, email, password, role }: any): Promise<User> => {
+      const res = await request<{ user: User; token: string }>('/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ name, email, password, role }),
+      });
+      session.save(res.user, res.token);
+      return res.user;
     },
+
     getSession: async (): Promise<User | null> => {
-      // Session check is usually fast/local
-      return store.getSession();
+      if (!session.getToken()) return null;
+      try {
+        const res = await request<{ user: User | null }>('/api/auth/session');
+        if (!res.user) {
+          session.clear();
+          return null;
+        }
+        return res.user;
+      } catch {
+        session.clear();
+        return null;
+      }
     },
+
     logout: async (): Promise<void> => {
-      store.clearSession();
+      try {
+        await request('/api/auth/logout', { method: 'POST' });
+      } catch {
+        // Continue clearing session locally regardless
+      } finally {
+        session.clear();
+      }
     },
-    updateProfile: async (id: string, updates: Partial<User>): Promise<User> => {
-       await delay(500);
-       const updated = store.updateUser(id, updates);
-       if (!updated) throw new Error('User not found');
-       return updated;
-    }
+
+    updateProfile: async (_id: string, updates: Partial<User>): Promise<User> => {
+      const res = await request<{ user: User }>('/api/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      });
+      session.updateUser(res.user);
+      return res.user;
+    },
   },
-  
+
   media: {
-    scrapeMetadata: async (url: string): Promise<{ title: string; description: string; tags: string[] }> => {
-      const adminKey = (import.meta as any).env?.VITE_ADMIN_KEY || '';
-      const res = await fetch('/api/scrape-metadata', {
+    scrapeMetadata: (url: string): Promise<{ title: string; description: string; tags: string[]; category: string }> =>
+      request('/api/scrape-metadata', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(adminKey ? { 'x-admin-key': adminKey } : {})
-        },
-        body: JSON.stringify({ url })
-      });
-      if (!res.ok) throw new Error('Scrape failed');
-      return res.json();
-    },
-    uploadFile: async (file: File): Promise<string> => {
-      const adminKey = (import.meta as any).env?.VITE_ADMIN_KEY || '';
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await fetch('/api/upload', {
+        body: JSON.stringify({ url }),
+      }),
+
+    uploadFile: (file: File): Promise<{ id: string; url: string; filename: string; mimetype: string; size: number }> => {
+      const fd = new FormData();
+      fd.append('file', file);
+      return request('/api/upload', {
         method: 'POST',
-        headers: {
-          ...(adminKey ? { 'x-admin-key': adminKey } : {})
-        },
-        body: formData
+        body: fd,
       });
-      if (!res.ok) throw new Error('Upload failed');
-      const data = await res.json();
-      return data.url;
     },
-    getAll: async (): Promise<MediaItem[]> => {
-      await delay(400);
-      return store.getMedia();
-    },
-    getById: async (id: string): Promise<MediaItem | undefined> => {
-      await delay(300);
-      return store.getMediaById(id);
-    },
-    create: async (item: Omit<MediaItem, 'id' | 'views' | 'uploadedAt'>): Promise<MediaItem> => {
-      await delay(1500); // Simulate upload time
-      return store.addMedia(item);
-    },
-    update: async (id: string, updates: Partial<MediaItem>): Promise<MediaItem> => {
-      await delay(500);
-      const updated = store.updateMedia(id, updates);
-      if (!updated) throw new Error('Media not found');
-      return updated;
-    },
-    delete: async (id: string): Promise<void> => {
-      await delay(600);
-      store.deleteMedia(id);
-    },
+
+    getAll: (): Promise<MediaItem[]> => request<MediaItem[]>('/api/media'),
+
+    getById: (id: string): Promise<MediaItem> => request<MediaItem>(`/api/media/${id}`),
+
+    create: (item: Partial<MediaItem>): Promise<MediaItem> =>
+      request<MediaItem>('/api/media', {
+        method: 'POST',
+        body: JSON.stringify(item),
+      }),
+
+    update: (id: string, updates: Partial<MediaItem>): Promise<MediaItem> =>
+      request<MediaItem>(`/api/media/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      }),
+
+    delete: (id: string): Promise<{ success: boolean }> =>
+      request<{ success: boolean }>(`/api/media/${id}`, {
+        method: 'DELETE',
+      }),
+
     getRelated: async (id: string): Promise<MediaItem[]> => {
-        await delay(200);
-        return store.getMedia().filter(m => m.id !== id).slice(0, 6);
+      const all = await request<MediaItem[]>('/api/media');
+      return all.filter((m) => m.id !== id).slice(0, 6);
     },
-    importBulk: async (items: MediaItem[]): Promise<void> => {
-        await delay(1000);
-        store.importMedia(items);
+
+    importBulk: async (items: MediaItem[]): Promise<{ success: boolean; count: number }> => {
+      let count = 0;
+      for (const item of items) {
+        const { id, views, uploadedAt, ...clean } = item as any;
+        try {
+          await request('/api/media', {
+            method: 'POST',
+            body: JSON.stringify(clean),
+          });
+          count++;
+        } catch (e) {
+          console.warn('[importBulk] Failed to import item:', item.title || id, e);
+        }
+      }
+      return { success: count > 0, count };
     },
-    rate: async (mediaId: string, userId: string, isLike: boolean): Promise<void> => {
-        await delay(200);
-        store.rateMedia(mediaId, userId, isLike);
-    }
+
+    rate: (mediaId: string, _userId: string, isLike: boolean): Promise<{ likes: number; dislikes: number }> =>
+      request(`/api/media/${mediaId}/rate`, {
+        method: 'POST',
+        body: JSON.stringify({ like: isLike }),
+      }),
   },
 
   users: {
-    getAll: async (): Promise<User[]> => {
-      await delay(500);
-      return store.getAllUsers();
+    getAll: (): Promise<User[]> => request<User[]>('/api/users'),
+
+    getById: (id: string): Promise<User> => request<User>(`/api/users/${id}`),
+
+    create: async (userData: any): Promise<User> => {
+      const data = await request<any>('/api/users', {
+        method: 'POST',
+        body: JSON.stringify(userData),
+      });
+      return data.user || data;
     },
-    getById: async (id: string): Promise<User | undefined> => {
-       await delay(300);
-       return store.getUser(id);
+
+    update: (id: string, updates: Partial<User>): Promise<User> =>
+      request<User>(`/api/users/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      }),
+
+    delete: (id: string): Promise<{ success: boolean }> =>
+      request<{ success: boolean }>(`/api/users/${id}`, {
+        method: 'DELETE',
+      }),
+
+    subscribe: async (_userId: string, creatorId: string): Promise<User> => {
+      const data = await request<{ user: User }>(`/api/users/${creatorId}/subscribe`, {
+        method: 'POST',
+      });
+      session.updateUser(data.user);
+      return data.user;
     },
-    subscribe: async (userId: string, creatorId: string): Promise<User> => {
-        await delay(2000); // Simulate payment gateway processing
-        const updated = store.subscribeUser(userId, creatorId);
-        if (!updated) throw new Error('Subscription failed');
-        return updated;
-    }
   },
 
   talent: {
-    getAll: async (): Promise<TalentProfile[]> => {
-      await delay(400);
-      return store.getAllTalent();
-    },
-    create: async (profile: Omit<TalentProfile, 'id'>): Promise<TalentProfile> => {
-      await delay(800);
-      return store.addTalent(profile);
-    },
-    update: async (id: string, updates: Partial<TalentProfile>): Promise<TalentProfile> => {
-       await delay(500);
-       const updated = store.updateTalent(id, updates);
-       if (!updated) throw new Error('Talent not found');
-       return updated;
-    },
-    delete: async (id: string): Promise<void> => {
-        await delay(500);
-        store.deleteTalent(id);
-    }
+    getAll: (): Promise<TalentProfile[]> => request<TalentProfile[]>('/api/talentProfiles'),
+
+    create: (profile: Partial<TalentProfile>): Promise<TalentProfile> =>
+      request<TalentProfile>('/api/talentProfiles', {
+        method: 'POST',
+        body: JSON.stringify(profile),
+      }),
+
+    update: (id: string, updates: Partial<TalentProfile>): Promise<TalentProfile> =>
+      request<TalentProfile>(`/api/talentProfiles/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      }),
+
+    delete: (id: string): Promise<{ success: boolean }> =>
+      request<{ success: boolean }>(`/api/talentProfiles/${id}`, {
+        method: 'DELETE',
+      }),
   },
 
   notifications: {
-     getAll: async (userId: string): Promise<Notification[]> => {
-         // Polling usually doesn't need fake delay
-         return store.getNotifications(userId);
-     },
-     markRead: async (id: string): Promise<void> => {
-         store.markNotificationRead(id);
-     },
-     markAllRead: async (userId: string): Promise<void> => {
-         store.markAllNotificationsRead(userId);
-     }
+    getAll: (_userId?: string): Promise<NotificationItem[]> =>
+      request<NotificationItem[]>('/api/notifications/mine'),
+
+    markRead: (id: string): Promise<NotificationItem> =>
+      request<NotificationItem>(`/api/notifications/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ read: true }),
+      }),
+
+    markAllRead: async (_userId?: string): Promise<void> => {
+      try {
+        const notifs = await request<NotificationItem[]>('/api/notifications/mine');
+        for (const n of notifs.filter((i) => !i.read)) {
+          await request(`/api/notifications/${n.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ read: true }),
+          });
+        }
+      } catch (err) {
+        console.error('Failed to mark all notifications read:', err);
+      }
+    },
   },
 
   messages: {
-    getConversation: async (userId1: string, userId2: string): Promise<Message[]> => {
-      await delay(200);
-      return store.getMessages(userId1, userId2);
-    },
-    send: async (senderId: string, receiverId: string, text: string): Promise<Message> => {
-      await delay(300);
-      return store.sendMessage(senderId, receiverId, text);
-    }
+    getConversation: (_userId1: string, userId2: string): Promise<MessageItem[]> =>
+      request<MessageItem[]>(`/api/messages/conversation/${userId2}`),
+
+    send: (_senderId: string, receiverId: string, text: string): Promise<MessageItem> =>
+      request<MessageItem>('/api/messages', {
+        method: 'POST',
+        body: JSON.stringify({
+          receiverId,
+          text,
+        }),
+      }),
   },
 
   settings: {
-      get: async () => store.getSiteSettings(),
-      update: async (settings: any) => {
-          await delay(300);
-          store.updateSiteSettings(settings);
-      }
-  }
+    get: (): Promise<{ _id: string; featuredMediaId: string | null }> =>
+      request<{ _id: string; featuredMediaId: string | null }>('/api/siteSettings'),
+
+    update: (settings: any): Promise<{ _id: string; featuredMediaId: string | null }> =>
+      request<{ _id: string; featuredMediaId: string | null }>('/api/siteSettings', {
+        method: 'PUT',
+        body: JSON.stringify(settings),
+      }),
+  },
 };
